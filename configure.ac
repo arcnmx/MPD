@@ -377,6 +377,11 @@ AC_ARG_ENABLE(tidal,
 		[enable support for Tidal streaming]),,
 	[enable_tidal=auto])
 
+AC_ARG_ENABLE(youtube-dl,
+	AS_HELP_STRING([--enable-youtube-dl],
+		[enable support for youtube-dl]),,
+	[enable_youtube_dl=auto])
+
 AC_ARG_ENABLE([libwrap],
 	AS_HELP_STRING([--enable-libwrap], [use libwrap]),,
 	[enable_libwrap=auto])
@@ -578,7 +583,7 @@ fi
 
 dnl -------------------------------- yajl -------------------------------------
 
-if test x$enable_qobuz != xno || test x$enable_soundcloud != xno || test x$enable_tidal != xno; then
+if test x$enable_qobuz != xno || test x$enable_soundcloud != xno || test x$enable_tidal != xno || test x$enable_youtube_dl != xno; then
 	PKG_CHECK_MODULES([YAJL], [yajl >= 2.0],
 		[found_yajl=yes],
 		[found_yajl=no])
@@ -747,6 +752,12 @@ MPD_DEPENDS([enable_tidal], [found_yajl], [Tidal streaming], [libyajl not found]
 MPD_DEPENDS([enable_tidal], [enable_curl], [Tidal streaming], [libcurl not found])
 MPD_AUTO(tidal, [Tidal streaming], [Tidal not available], [found_tidal=yes])
 MPD_DEFINE_CONDITIONAL(enable_tidal, ENABLE_TIDAL, [Tidal streaming])
+
+dnl --------------------------------- youtube-dl ------------------------------
+MPD_DEPENDS([enable_youtube_dl], [found_yajl], [youtube-dl streaming], [libyajl not found])
+MPD_DEPENDS([enable_youtube_dl], [enable_curl], [youtube-dl streaming], [libcurl not found])
+MPD_AUTO(youtube_dl, [youtube-dl streaming], [youtube-dl not available], [found_youtube_dl=yes])
+MPD_DEFINE_CONDITIONAL(enable_youtube_dl, ENABLE_YTDL, [youtube-dl streaming])
 
 dnl ---------------------------------- cdio ---------------------------------
 MPD_ENABLE_AUTO_PKG(cdio_paranoia, CDIO_PARANOIA, [libcdio_paranoia],
@@ -1547,6 +1558,7 @@ results(qobuz,[Qobuz])
 results(smbclient,[SMBCLIENT])
 results(soundcloud,[Soundcloud])
 results(tidal,[Tidal])
+results(youtube_dl,[youtube-dl])
 printf '\n\t'
 results(mms,[MMS])
 
