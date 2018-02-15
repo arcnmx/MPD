@@ -32,6 +32,10 @@
 #include "plugins/CurlInputPlugin.hxx"
 #endif
 
+#ifdef ENABLE_YTDL
+#include "plugins/YtdlInputPlugin.hxx"
+#endif
+
 #ifdef ENABLE_FFMPEG
 #include "plugins/FfmpegInputPlugin.hxx"
 #endif
@@ -61,6 +65,9 @@ const InputPlugin *const input_plugins[] = {
 #endif
 #ifdef ENABLE_QOBUZ
 	&qobuz_input_plugin,
+#endif
+#ifdef ENABLE_YTDL
+	&input_plugin_ytdl,
 #endif
 #ifdef ENABLE_CURL
 	&input_plugin_curl,
