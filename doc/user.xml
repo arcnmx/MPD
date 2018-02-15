@@ -2563,6 +2563,19 @@ run</programlisting>
           </tgroup>
         </informaltable>
       </section>
+
+      <section id="youtube_dl_input">
+        <title><varname>youtube-dl</varname></title>
+
+        <para>
+          Plays songs using <application>youtube-dl</application>. Use the <link
+          linkend="youtube_dl_playlist">youtube-dl playlist plugin</link>
+          instead of this directly, as it is able to populate more accurate
+          metadata. This plugin depends on curl and uses the <filename>
+          youtube-dl://</filename> URI scheme.
+        </para>
+      </section>
+
     </section>
 
     <section id="decoder_plugins">
@@ -4865,6 +4878,35 @@ run</programlisting>
         <para>
           Reads <ulink url="http://www.xspf.org/">XSPF</ulink>
           playlist files.
+        </para>
+      </section>
+
+      <section id="youtube_dl_playlist">
+        <title><varname>youtube-dl</varname></title>
+
+        <para>
+          Downloads a song or playlist with <ulink
+          url="https://rg3.github.io/youtube-dl/">youtube-dl</ulink> from <ulink
+          url="https://rg3.github.io/youtube-dl/supportedsites.html">hundreds of
+          supported audio and video hosting sites</ulink>. <filename>youtube-dl
+          </filename> must be installed and available in the system <varname>
+          PATH</varname>, and the <link linkend="youtube_dl_playlist">youtube-dl
+          input plugin</link> must also be enabled. Add web URLs prefixed with
+          <filename>ytdl://</filename> to use it.
+        </para>
+
+        <para>
+          The <filename>ytdl://list/https://...</filename> URI prefix can be
+          used to force loading of a playlist rather than a single file on sites
+          like YouTube where pages can combine both - this is equivalent to
+          youtube-dl's <filename>--yes-playlist</filename> option.
+        </para>
+
+        <para>
+          The <filename>ytdl://flat/https://...</filename> URI prefix can be
+          used to "quick-load" a playlist without prefetching metadata. This is
+          much quicker to add, but misses some information. This is equivalent
+          to youtube-dl's <filename>--flat-playlist</filename> option.
         </para>
       </section>
     </section>

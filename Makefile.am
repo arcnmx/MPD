@@ -238,6 +238,9 @@ libmpd_a_SOURCES += \
 	src/db/Selection.cxx src/db/Selection.hxx
 endif
 
+YTDL_SOURCES = \
+	src/lib/ytdl/YtdlParser.cxx
+
 CURL_SOURCES = \
 	src/lib/curl/Delegate.cxx src/lib/curl/Delegate.hxx \
 	src/lib/curl/Parser.hxx \
@@ -1349,6 +1352,7 @@ libinput_a_SOURCES = \
 libinput_a_CPPFLAGS = $(AM_CPPFLAGS) \
 	$(CURL_CFLAGS) \
 	$(SMBCLIENT_CFLAGS) \
+	$(YAJL_CFLAGS) \
 	$(NFS_CFLAGS) \
 	$(CDIO_PARANOIA_CFLAGS) \
 	$(FFMPEG_CFLAGS) \
@@ -1405,6 +1409,14 @@ libinput_a_SOURCES += \
 	src/input/plugins/QobuzTagScanner.cxx src/input/plugins/QobuzTagScanner.hxx \
 	src/input/plugins/QobuzInputPlugin.cxx src/input/plugins/QobuzInputPlugin.hxx
 INPUT_LIBS += $(YAJL_LIBS) $(LIBGCRYPT_LIBS)
+endif
+
+if ENABLE_YTDL
+libinput_a_SOURCES += \
+	$(YAJL_SOURCES) \
+	$(YTDL_SOURCES) \
+	src/input/plugins/YtdlInputPlugin.cxx src/input/plugins/YtdlInputPlugin.hxx
+INPUT_LIBS += $(YAJL_LIBS)
 endif
 
 if ENABLE_SMBCLIENT
@@ -1696,6 +1708,15 @@ libplaylist_plugins_a_SOURCES += \
 	$(YAJL_SOURCES) \
 	src/playlist/plugins/SoundCloudPlaylistPlugin.cxx \
 	src/playlist/plugins/SoundCloudPlaylistPlugin.hxx
+PLAYLIST_LIBS += $(YAJL_LIBS)
+endif
+
+if ENABLE_YTDL
+libplaylist_plugins_a_SOURCES += \
+	$(YAJL_SOURCES) \
+	$(YTDL_SOURCES) \
+	src/playlist/plugins/YtdlPlaylistPlugin.cxx \
+	src/playlist/plugins/YtdlPlaylistPlugin.hxx
 PLAYLIST_LIBS += $(YAJL_LIBS)
 endif
 

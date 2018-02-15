@@ -31,6 +31,9 @@
   * connected by IPC socket.
   */
 static const char *const remoteUrlPrefixes[] = {
+#if defined(ENABLE_YTDL)
+	"youtube-dl://",
+#endif
 #if defined(ENABLE_CURL)
 	"http://",
 	"https://",
