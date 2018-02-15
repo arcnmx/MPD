@@ -20,6 +20,13 @@
 #ifndef MPD_INPUT_CURL_HXX
 #define MPD_INPUT_CURL_HXX
 
+class InputStream;
+class Tag;
+class Mutex;
+class Cond;
+
 extern const struct InputPlugin input_plugin_curl;
+
+InputStream *OpenCurlInputStream(const char *url, Mutex &mutex, Cond &cond, Tag *tag = nullptr);
 
 #endif

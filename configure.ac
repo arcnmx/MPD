@@ -366,6 +366,11 @@ AC_ARG_ENABLE(soundcloud,
 		[enable support for soundcloud.com]),,
 	[enable_soundcloud=auto])
 
+AC_ARG_ENABLE(ytdl,
+	AS_HELP_STRING([--enable-ytdl],
+		[enable support for youtube-dl]),,
+	[enable_ytdl=auto])
+
 AC_ARG_ENABLE([libwrap],
 	AS_HELP_STRING([--enable-libwrap], [use libwrap]),,
 	[enable_libwrap=auto])
@@ -710,6 +715,14 @@ MPD_AUTO([soundcloud], [soundcloud.com support], [libyajl not found],
 		[found_soundcloud=no])])
 MPD_DEFINE_CONDITIONAL(enable_soundcloud, ENABLE_SOUNDCLOUD,
 	[soundcloud.com support])
+
+dnl --------------------------------- youtube-dl ------------------------------
+MPD_AUTO([ytdl], [youtube-dl support], [libyajl not found],
+	[PKG_CHECK_MODULES([YAJL], [yajl >= 2.0],
+		[found_ytdl=yes],
+		[found_ytdl=no])])
+MPD_DEFINE_CONDITIONAL(enable_ytdl, ENABLE_YTDL,
+	[youtube-dl support])
 
 dnl ---------------------------------- cdio ---------------------------------
 MPD_ENABLE_AUTO_PKG(cdio_paranoia, CDIO_PARANOIA, [libcdio_paranoia],
@@ -1493,6 +1506,7 @@ results(cdio_paranoia, [CDIO_PARANOIA])
 results(curl,[CURL])
 results(smbclient,[SMBCLIENT])
 results(soundcloud,[Soundcloud])
+results(ytdl,[youtube-dl])
 printf '\n\t'
 results(mms,[MMS])
 

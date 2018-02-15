@@ -83,7 +83,7 @@ struct CurlInputStream final : public AsyncInputStream, CurlResponseHandler {
 	CurlInputStream(const CurlInputStream &) = delete;
 	CurlInputStream &operator=(const CurlInputStream &) = delete;
 
-	static InputStream *Open(const char *url, Mutex &mutex, Cond &cond);
+	static InputStream *Open(const char *url, Mutex &mutex, Cond &cond, Tag *tag);
 
 	/**
 	 * Create and initialize a new #CurlRequest instance.  After
@@ -218,7 +218,6 @@ CurlInputStream::OnHeaders(unsigned status,
 	if (i != headers.end()) {
 		TagBuilder tag_builder;
 		tag_builder.AddItem(TAG_NAME, i->second.c_str());
-
 		SetTag(tag_builder.CommitNew());
 	}
 
@@ -441,9 +440,13 @@ CurlInputStream::DoSeek(offset_type new_offset)
 }
 
 inline InputStream *
-CurlInputStream::Open(const char *url, Mutex &mutex, Cond &cond)
+CurlInputStream::Open(const char *url, Mutex &mutex, Cond &cond, Tag *tag)
 {
 	CurlInputStream *c = new CurlInputStream(url, mutex, cond);
+
+	if (tag) {
+		c->SetTag(tag);
+	}
 
 	try {
 		BlockingCall(io_thread_get(), [c](){
@@ -458,6 +461,10 @@ CurlInputStream::Open(const char *url, Mutex &mutex, Cond &cond)
 	return c->icy;
 }
 
+InputStream *OpenCurlInputStream(const char *url, Mutex &mutex, Cond &cond, Tag *tag) {
+	return CurlInputStream::Open(url, mutex, cond, tag);
+}
+
 static InputStream *
 input_curl_open(const char *url, Mutex &mutex, Cond &cond)
 {
@@ -465,7 +472,7 @@ input_curl_open(const char *url, Mutex &mutex, Cond &cond)
 	    strncmp(url, "https://", 8) != 0)
 		return nullptr;
 
-	return CurlInputStream::Open(url, mutex, cond);
+	return CurlInputStream::Open(url, mutex, cond, nullptr);
 }
 
 const struct InputPlugin input_plugin_curl = {
