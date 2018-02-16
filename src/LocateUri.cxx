@@ -24,6 +24,7 @@
 #include "ls.hxx"
 #include "util/UriUtil.hxx"
 #include "util/StringCompare.hxx"
+#include "protocol/Ack.hxx"
 
 #ifdef ENABLE_DATABASE
 #include "storage/StorageInterface.hxx"
@@ -62,7 +63,7 @@ LocateAbsoluteUri(const char *uri
 		  )
 {
 	if (!uri_supported_scheme(uri))
-		throw std::runtime_error("Unsupported URI scheme");
+		throw ProtocolError(ACK_ERROR_NO_EXIST, "Unsupported URI scheme");
 
 #ifdef ENABLE_DATABASE
 	if (storage != nullptr) {
