@@ -239,7 +239,9 @@ libmpd_a_SOURCES += \
 endif
 
 YTDL_SOURCES = \
-	src/lib/ytdl/YtdlParser.cxx
+	src/lib/ytdl/Parser.cxx src/lib/ytdl/Invoke.cxx \
+	src/lib/ytdl/Init.cxx \
+	src/lib/ytdl/TagHandler.cxx
 
 CURL_SOURCES = \
 	src/lib/curl/Delegate.cxx src/lib/curl/Delegate.hxx \
@@ -1415,7 +1417,8 @@ if ENABLE_YTDL
 libinput_a_SOURCES += \
 	$(YAJL_SOURCES) \
 	$(YTDL_SOURCES) \
-	src/input/plugins/YtdlInputPlugin.cxx src/input/plugins/YtdlInputPlugin.hxx
+	src/input/plugins/YtdlInputPlugin.cxx src/input/plugins/YtdlInputPlugin.hxx \
+	src/input/plugins/YtdlTagScanner.cxx src/input/plugins/YtdlTagScanner.hxx
 INPUT_LIBS += $(YAJL_LIBS)
 endif
 
