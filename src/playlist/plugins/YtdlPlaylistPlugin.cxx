@@ -44,7 +44,7 @@ playlist_ytdl_open_uri(const char *uri, Mutex &mutex, Cond &cond)
 	Ytdl::TagHandler metadata;
 	Ytdl::Parser parser(metadata);
 	auto handle = parser.CreateHandle();
-	Ytdl::Invoke(*handle, uri, Ytdl::PlaylistMode::FULL);
+	Ytdl::Invoke(*handle, uri, Ytdl::PlaylistMode::FLAT);
 
 	// TODO: sites that don't have expiring URLs don't need the input plugin
 

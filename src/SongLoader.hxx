@@ -67,6 +67,10 @@ public:
 	}
 #endif
 
+	const Client *GetClient() const {
+		return client;
+	}
+
 	DetachedSong LoadSong(const LocatedUri &uri) const;
 
 	/**
