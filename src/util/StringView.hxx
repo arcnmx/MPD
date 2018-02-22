@@ -32,6 +32,7 @@
 
 #include "ConstBuffer.hxx"
 #include "StringAPI.hxx"
+#include <string>
 
 template<typename T>
 struct BasicStringView : ConstBuffer<T> {
@@ -60,6 +61,9 @@ struct BasicStringView : ConstBuffer<T> {
 	BasicStringView(pointer_type _data) noexcept
 		:ConstBuffer<T>(_data,
 				_data != nullptr ? StringLength(_data) : 0) {}
+
+	BasicStringView(const std::basic_string<T> &string) noexcept
+		:ConstBuffer<T>(string.data(), string.size()) {}
 
 	constexpr BasicStringView(std::nullptr_t n) noexcept
 		:ConstBuffer<T>(n) {}
@@ -128,6 +132,10 @@ struct BasicStringView : ConstBuffer<T> {
 		if (match)
 			size -= needle.size;
 		return match;
+	}
+
+	std::basic_string<T> ToString() const {
+		return std::basic_string<T>(data, this->size);
 	}
 };
 
