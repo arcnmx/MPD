@@ -36,6 +36,7 @@
 
 #include <utility>
 #include <cstddef>
+#include <string>
 
 #if __cplusplus >= 201703L && !GCC_OLDER_THAN(7,0)
 #include <string_view>
@@ -68,6 +69,9 @@ struct BasicStringView : ConstBuffer<T> {
 	BasicStringView(pointer _data) noexcept
 		:ConstBuffer<T>(_data,
 				_data != nullptr ? StringLength(_data) : 0) {}
+
+	BasicStringView(const std::basic_string<T> &string) noexcept
+		:ConstBuffer<T>(string.data(), string.size()) {}
 
 	constexpr BasicStringView(std::nullptr_t n) noexcept
 		:ConstBuffer<T>(n) {}
@@ -223,6 +227,10 @@ struct BasicStringView : ConstBuffer<T> {
 		if (match)
 			size -= needle.size;
 		return match;
+	}
+
+	std::basic_string<T> ToString() const {
+		return std::basic_string<T>(data, this->size);
 	}
 };
 
