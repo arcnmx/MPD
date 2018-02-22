@@ -32,6 +32,7 @@
 
 #include "ConstBuffer.hxx"
 #include "StringAPI.hxx"
+#include <string>
 
 template<typename T>
 struct BasicStringView : ConstBuffer<T> {
@@ -107,6 +108,10 @@ struct BasicStringView : ConstBuffer<T> {
 	void Strip() noexcept {
 		StripLeft();
 		StripRight();
+	}
+
+	std::basic_string<T> ToString() const {
+		return std::basic_string<T>(data, this->size);
 	}
 };
 
