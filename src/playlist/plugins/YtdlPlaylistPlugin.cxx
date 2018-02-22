@@ -44,6 +44,8 @@ playlist_ytdl_open_uri(const char *uri, Mutex &mutex, Cond &cond)
 	Ytdl::TagHandler metadata;
 	Ytdl::Parser parser(metadata);
 	auto handle = parser.CreateHandle();
+	/* TODO: PlaylistMode::FLAT is much faster but does not retrieve
+	 * per-song metadata. We should use it instead with RemoteTagScanner */
 	Ytdl::Invoke(*handle, uri, Ytdl::PlaylistMode::FULL);
 
 	// TODO: sites that don't have expiring URLs don't need the input plugin
