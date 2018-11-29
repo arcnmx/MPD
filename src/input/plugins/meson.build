@@ -84,6 +84,16 @@ if enable_tidal
   ]
 endif
 
+if enable_ytdl
+  input_plugins_sources += [
+    'YtdlInputPlugin.cxx',
+    'YtdlTagScanner.cxx',
+  ]
+  input_plugins_deps += [
+    ytdl_dep,
+  ]
+endif
+
 input_plugins = static_library(
   'input_plugins',
   input_plugins_sources,
