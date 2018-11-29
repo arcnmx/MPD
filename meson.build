@@ -340,6 +340,7 @@ subdir('src/lib/sqlite')
 subdir('src/lib/systemd')
 subdir('src/lib/upnp')
 subdir('src/lib/yajl')
+subdir('src/lib/ytdl')
 
 subdir('src/fs')
 subdir('src/config')

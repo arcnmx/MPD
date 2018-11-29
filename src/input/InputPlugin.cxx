@@ -25,11 +25,15 @@
 bool
 InputPlugin::SupportsUri(const char *uri) const noexcept
 {
-	assert(prefixes != nullptr);
+	if (supports_uri != nullptr) {
+		return (*supports_uri)(uri);
+	} {
+		assert(prefixes != nullptr);
 
-	for (auto i = prefixes; *i != nullptr; ++i)
-		if (StringStartsWithIgnoreCase(uri, *i))
-			return true;
+		for (auto i = prefixes; *i != nullptr; ++i)
+			if (StringStartsWithIgnoreCase(uri, *i))
+				return true;
 
-	return false;
+		return false;
+	}
 }
