@@ -22,10 +22,12 @@
 #include "PlaylistAny.hxx"
 #include "PlaylistSong.hxx"
 #include "PlaylistError.hxx"
+#include "Instance.hxx"
 #include "queue/Playlist.hxx"
 #include "SongEnumerator.hxx"
 #include "song/DetachedSong.hxx"
 #include "thread/Mutex.hxx"
+#include "client/Client.hxx"
 #include "fs/Traits.hxx"
 
 #ifdef ENABLE_DATABASE
@@ -38,7 +40,7 @@ void
 playlist_load_into_queue(const char *uri, SongEnumerator &e,
 			 unsigned start_index, unsigned end_index,
 			 playlist &dest, PlayerControl &pc,
-			 const SongLoader &loader)
+			 const SongLoader &loader, Client &client)
 {
 	const std::string base_uri = uri != nullptr
 		? PathTraitsUTF8::GetParent(uri)
@@ -57,6 +59,7 @@ playlist_load_into_queue(const char *uri, SongEnumerator &e,
 						   loader)) {
 			continue;
 		}
+		client.GetInstance().LookupRemoteTag(song->GetURI());
 
 		dest.AppendSong(pc, std::move(*song));
 	}
@@ -66,7 +69,7 @@ void
 playlist_open_into_queue(const char *uri,
 			 unsigned start_index, unsigned end_index,
 			 playlist &dest, PlayerControl &pc,
-			 const SongLoader &loader)
+			 const SongLoader &loader, Client &client)
 {
 	Mutex mutex;
 
@@ -80,5 +83,5 @@ playlist_open_into_queue(const char *uri,
 
 	playlist_load_into_queue(uri, *playlist,
 				 start_index, end_index,
-				 dest, pc, loader);
+				 dest, pc, loader, client);
 }

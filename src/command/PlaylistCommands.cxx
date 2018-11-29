@@ -74,7 +74,7 @@ handle_load(Client &client, Request args, gcc_unused Response &r)
 	playlist_open_into_queue(args.front(),
 				 range.start, range.end,
 				 client.GetPlaylist(),
-				 client.GetPlayerControl(), loader);
+				 client.GetPlayerControl(), loader, client);
 	return CommandResult::OK;
 }
 

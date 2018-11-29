@@ -28,6 +28,7 @@ class SongLoader;
 class SongEnumerator;
 struct playlist;
 class PlayerControl;
+class Client;
 
 /**
  * Loads the contents of a playlist and append it to the specified
@@ -42,7 +43,7 @@ void
 playlist_load_into_queue(const char *uri, SongEnumerator &e,
 			 unsigned start_index, unsigned end_index,
 			 playlist &dest, PlayerControl &pc,
-			 const SongLoader &loader);
+			 const SongLoader &loader, Client &client);
 
 /**
  * Opens a playlist with a playlist plugin and append to the specified
@@ -52,7 +53,7 @@ void
 playlist_open_into_queue(const char *uri,
 			 unsigned start_index, unsigned end_index,
 			 playlist &dest, PlayerControl &pc,
-			 const SongLoader &loader);
+			 const SongLoader &loader, Client &client);
 
 #endif
 
