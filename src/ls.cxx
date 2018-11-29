@@ -52,9 +52,8 @@ uri_supported_scheme(const char *uri) noexcept
 	assert(uri_has_scheme(uri));
 
 	input_plugins_for_each_enabled(plugin)
-		for (auto i = plugin->prefixes; *i != nullptr; ++i)
-			if (StringStartsWithCaseASCII(uri, *i))
-				return true;
+		if (plugin->SupportsUri(uri))
+			return true;
 
 	return false;
 }
