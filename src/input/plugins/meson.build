@@ -90,9 +90,6 @@ if enable_ytdl
     'YtdlInputStream.cxx',
     'YtdlTagScanner.cxx',
   ]
-  input_plugins_deps += [
-    ytdl_dep,
-  ]
 endif
 
 input_plugins = static_library(
@@ -110,6 +107,7 @@ input_plugins = static_library(
     smbclient_dep,
     yajl_dep,
     crypto_md5_dep,
+    ytdl_dep,
   ],
 )
 
