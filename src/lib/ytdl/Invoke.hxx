@@ -25,6 +25,8 @@ public:
 		monitor(std::move(monitor_))
 	{ }
 
+	~InvokeContext();
+
 	static std::unique_ptr<InvokeContext>
 	Invoke(const char* uri, PlaylistMode mode, EventLoop &event_loop, YtdlHandler &handler);
 
