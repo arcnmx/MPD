@@ -107,13 +107,19 @@ bool
 YtdlProcess::Process()
 {
 	uint8_t buffer[0x80];
-	int res = read(fd, buffer, sizeof(buffer));
-	if (res < 0) {
-		throw MakeErrno("failed to read from pipe");
-	} else if (res > 0) {
-		handle.Parse(buffer, res);
-		return true;
-	}
+	int res;
+	do {
+		res = read(fd, buffer, sizeof(buffer));
+		if (res < 0) {
+			if (errno == EWOULDBLOCK) {
+				return true;
+			} else if (errno != EINTR && errno != EAGAIN) {
+				throw MakeErrno("failed to read from pipe");
+			}
+		} else if (res > 0) {
+			handle.Parse(buffer, res);
+		}
+	} while (res != 0);
 
 	handle.CompleteParse();
 
@@ -153,9 +159,6 @@ Invoke(Yajl::Handle &handle, const char *url, PlaylistMode mode, EventLoop &loop
 	auto process = YtdlProcess::Invoke(handle, url, mode);
 
 	std::unique_ptr<YtdlMonitor> monitor = std::make_unique<YtdlMonitor>(handler, std::move(process), loop);
-	BlockingCall(loop, [&] {
-		monitor->ScheduleRead();
-	});
 
 	return monitor;
 }
@@ -174,12 +177,21 @@ InvokeContext::Invoke(const char* uri, PlaylistMode mode, EventLoop &event_loop,
 	auto parser = std::make_unique<Parser>(*metadata);
 	auto handle = parser->CreateHandle();
 	auto monitor = Ytdl::Invoke(*handle, uri, mode, event_loop, handler);
+	BlockingCall(monitor->GetEventLoop(), [&] {
+		monitor->ScheduleRead();
+	});
 	return std::make_unique<InvokeContext>(
 		std::move(metadata),
 		std::move(parser),
 		std::move(handle),
 		std::move(monitor)
 	);
+}
+
+InvokeContext::~InvokeContext() {
+	BlockingCall(monitor->GetEventLoop(), [&] {
+		monitor->Steal();
+	});
 }
 
 } // namespace Ytdl
