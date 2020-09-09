@@ -6,6 +6,7 @@
 #include "util/IterableSplitString.hxx"
 
 static const char* DEFAULT_WHITELIST =
+	"youtu.be "
 	"www.youtube.com "
 	"www.soundcloud.com "
 	"www.bandcamp.com "
