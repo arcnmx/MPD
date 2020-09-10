@@ -8,8 +8,7 @@
 static const char* DEFAULT_WHITELIST =
 	"youtu.be "
 	"www.youtube.com "
-	"www.soundcloud.com "
-	"www.bandcamp.com "
+	"soundcloud.com "
 	"www.twitch.tv";
 
 namespace Ytdl {
