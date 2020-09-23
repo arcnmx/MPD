@@ -14,8 +14,6 @@ libcdio_paranoia_dep = dependency('libcdio_paranoia', version: '>= 10.2+0.93+1',
 input_features.set('ENABLE_CDIO_PARANOIA', libcdio_paranoia_dep.found())
 if libcdio_paranoia_dep.found()
   input_plugins_sources += 'CdioParanoiaInputPlugin.cxx'
-
-  input_plugins_deps += libcdio_paranoia_dep
 endif
 
 if curl_dep.found()
@@ -34,17 +32,14 @@ libmms_dep = dependency('libmms', version: '>= 0.4', required: get_option('mms')
 input_features.set('ENABLE_MMS', libmms_dep.found())
 if libmms_dep.found()
   input_plugins_sources += 'MmsInputPlugin.cxx'
-  input_plugins_deps += libmms_dep
 endif
 
 if nfs_dep.found()
   input_plugins_sources += 'NfsInputPlugin.cxx'
-  input_plugins_deps += nfs_dep
 endif
 
 if smbclient_dep.found()
   input_plugins_sources += 'SmbclientInputPlugin.cxx'
-  input_plugins_deps += smbclient_dep
 endif
 
 qobuz_feature = get_option('qobuz')

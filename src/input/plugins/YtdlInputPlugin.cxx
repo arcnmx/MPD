@@ -48,7 +48,7 @@ input_ytdl_open(const char *uri, Mutex &mutex)
 	return nullptr;
 }
 
-static std::set<std::string> input_ytdl_protocols()
+static std::set<std::string> input_ytdl_protocols() noexcept
 {
 	std::set<std::string> protocols;
 	protocols.emplace("ytdl");
