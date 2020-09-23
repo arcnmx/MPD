@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -42,9 +42,9 @@ extern "C" {
 #include <nfsc/libnfs-raw-nfs.h>
 }
 
+#include <cassert>
 #include <string>
 
-#include <assert.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 
@@ -80,19 +80,19 @@ public:
 		nfs_init(_loop);
 	}
 
-	~NfsStorage() {
+	~NfsStorage() override {
 		BlockingCall(GetEventLoop(), [this](){ Disconnect(); });
 		nfs_finish();
 	}
 
 	/* virtual methods from class Storage */
-	StorageFileInfo GetInfo(const char *uri_utf8, bool follow) override;
+	StorageFileInfo GetInfo(std::string_view uri_utf8, bool follow) override;
 
-	std::unique_ptr<StorageDirectoryReader> OpenDirectory(const char *uri_utf8) override;
+	std::unique_ptr<StorageDirectoryReader> OpenDirectory(std::string_view uri_utf8) override;
 
-	std::string MapUTF8(const char *uri_utf8) const noexcept override;
+	[[nodiscard]] std::string MapUTF8(std::string_view uri_utf8) const noexcept override;
 
-	const char *MapToRelativeUTF8(const char *uri_utf8) const noexcept override;
+	[[nodiscard]] std::string_view MapToRelativeUTF8(std::string_view uri_utf8) const noexcept override;
 
 	/* virtual methods from NfsLease */
 	void OnNfsConnectionReady() noexcept final {
@@ -129,7 +129,7 @@ public:
 	}
 
 private:
-	EventLoop &GetEventLoop() const noexcept {
+	[[nodiscard]] EventLoop &GetEventLoop() const noexcept {
 		return defer_connect.GetEventLoop();
 	}
 
@@ -216,10 +216,8 @@ private:
 };
 
 static std::string
-UriToNfsPath(const char *_uri_utf8)
+UriToNfsPath(std::string_view _uri_utf8)
 {
-	assert(_uri_utf8 != nullptr);
-
 	/* libnfs paths must begin with a slash */
 	std::string uri_utf8("/");
 	uri_utf8.append(_uri_utf8);
@@ -228,25 +226,23 @@ UriToNfsPath(const char *_uri_utf8)
 	/* assume UTF-8 when accessing NFS from Windows */
 	return uri_utf8;
 #else
-	return AllocatedPath::FromUTF8Throw(uri_utf8.c_str()).Steal();
+	return AllocatedPath::FromUTF8Throw(uri_utf8).Steal();
 #endif
 }
 
 std::string
-NfsStorage::MapUTF8(const char *uri_utf8) const noexcept
+NfsStorage::MapUTF8(std::string_view uri_utf8) const noexcept
 {
-	assert(uri_utf8 != nullptr);
-
-	if (StringIsEmpty(uri_utf8))
+	if (uri_utf8.empty())
 		return base;
 
-	return PathTraitsUTF8::Build(base.c_str(), uri_utf8);
+	return PathTraitsUTF8::Build(base, uri_utf8);
 }
 
-const char *
-NfsStorage::MapToRelativeUTF8(const char *uri_utf8) const noexcept
+std::string_view
+NfsStorage::MapToRelativeUTF8(std::string_view uri_utf8) const noexcept
 {
-	return PathTraitsUTF8::Relative(base.c_str(), uri_utf8);
+	return PathTraitsUTF8::Relative(base, uri_utf8);
 }
 
 static void
@@ -276,7 +272,7 @@ public:
 		:BlockingNfsOperation(_connection), path(_path),
 		 follow(_follow) {}
 
-	const StorageFileInfo &GetInfo() const {
+	[[nodiscard]] const StorageFileInfo &GetInfo() const {
 		return info;
 	}
 
@@ -288,13 +284,13 @@ protected:
 			connection.Lstat(path, *this);
 	}
 
-	void HandleResult(gcc_unused unsigned status, void *data) noexcept override {
+	void HandleResult([[maybe_unused]] unsigned status, void *data) noexcept override {
 		Copy(info, *(const struct nfs_stat_64 *)data);
 	}
 };
 
 StorageFileInfo
-NfsStorage::GetInfo(const char *uri_utf8, bool follow)
+NfsStorage::GetInfo(std::string_view uri_utf8, bool follow)
 {
 	const std::string path = UriToNfsPath(uri_utf8);
 
@@ -307,11 +303,9 @@ NfsStorage::GetInfo(const char *uri_utf8, bool follow)
 
 gcc_pure
 static bool
-SkipNameFS(PathTraitsFS::const_pointer_type name) noexcept
+SkipNameFS(PathTraitsFS::const_pointer name) noexcept
 {
-	return name[0] == '.' &&
-		(name[1] == 0 ||
-		 (name[1] == '.' && name[2] == 0));
+	return PathTraitsFS::IsSpecialFilename(name);
 }
 
 static void
@@ -356,9 +350,9 @@ protected:
 		connection.OpenDirectory(path, *this);
 	}
 
-	void HandleResult(gcc_unused unsigned status,
+	void HandleResult([[maybe_unused]] unsigned status,
 			  void *data) noexcept override {
-		struct nfsdir *const dir = (struct nfsdir *)data;
+		auto *const dir = (struct nfsdir *)data;
 
 		CollectEntries(dir);
 		connection.CloseDirectory(dir);
@@ -397,7 +391,7 @@ NfsListDirectoryOperation::CollectEntries(struct nfsdir *dir)
 }
 
 std::unique_ptr<StorageDirectoryReader>
-NfsStorage::OpenDirectory(const char *uri_utf8)
+NfsStorage::OpenDirectory(std::string_view uri_utf8)
 {
 	const std::string path = UriToNfsPath(uri_utf8);
 
@@ -416,7 +410,7 @@ CreateNfsStorageURI(EventLoop &event_loop, const char *base)
 	if (p == nullptr)
 		return nullptr;
 
-	const char *mount = strchr(p, '/');
+	const char *mount = std::strchr(p, '/');
 	if (mount == nullptr)
 		throw std::runtime_error("Malformed nfs:// URI");
 

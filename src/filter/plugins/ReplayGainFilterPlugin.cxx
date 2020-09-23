@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,18 +20,17 @@
 #include "ReplayGainFilterPlugin.hxx"
 #include "filter/Filter.hxx"
 #include "filter/Prepared.hxx"
-#include "AudioFormat.hxx"
 #include "ReplayGainInfo.hxx"
 #include "ReplayGainConfig.hxx"
 #include "mixer/MixerControl.hxx"
+#include "pcm/AudioFormat.hxx"
 #include "pcm/Volume.hxx"
 #include "util/ConstBuffer.hxx"
 #include "util/Domain.hxx"
 #include "Log.hxx"
 
+#include <cassert>
 #include <exception>
-
-#include <assert.h>
 
 static constexpr Domain replay_gain_domain("replay_gain");
 

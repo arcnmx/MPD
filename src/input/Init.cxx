@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -27,13 +27,21 @@
 #include "PluginUnavailable.hxx"
 #include "util/RuntimeError.hxx"
 
+#include <cassert>
 #include <stdexcept>
 
-#include <assert.h>
+#include "io/uring/Features.h"
+#ifdef HAVE_URING
+#include "plugins/UringInputPlugin.hxx"
+#endif
 
 void
 input_stream_global_init(const ConfigData &config, EventLoop &event_loop)
 {
+#ifdef HAVE_URING
+	InitUringInputPlugin(event_loop);
+#endif
+
 	const ConfigBlock empty;
 
 	for (unsigned i = 0; input_plugins[i] != nullptr; ++i) {
@@ -59,7 +67,7 @@ input_stream_global_init(const ConfigData &config, EventLoop &event_loop)
 				plugin->init(event_loop, *block);
 			input_plugins_enabled[i] = true;
 		} catch (const PluginUnconfigured &e) {
-			LogFormat(LogLevel::INFO, e,
+			LogFormat(LogLevel::DEBUG, e,
 				  "Input plugin '%s' is not configured",
 				  plugin->name);
 			continue;

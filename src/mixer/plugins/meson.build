@@ -31,7 +31,14 @@ if libsndio_dep.found()
 endif
 
 if is_windows
-  mixer_plugins_sources += 'WinmmMixerPlugin.cxx'
+  mixer_plugins_sources += [
+    'WinmmMixerPlugin.cxx',
+    'WasapiMixerPlugin.cxx',
+  ]
+endif
+
+if is_android
+  mixer_plugins_sources += 'AndroidMixerPlugin.cxx'
 endif
 
 mixer_plugins = static_library(

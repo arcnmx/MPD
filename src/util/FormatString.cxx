@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -24,11 +24,11 @@
 #include <stdlib.h>
 
 AllocatedString<>
-FormatStringV(const char *fmt, va_list args) noexcept
+FormatStringV(const char *fmt, std::va_list args) noexcept
 {
-	va_list tmp;
+	std::va_list tmp;
 	va_copy(tmp, args);
-	const int length = vsnprintf(NULL, 0, fmt, tmp);
+	const int length = vsnprintf(nullptr, 0, fmt, tmp);
 	va_end(tmp);
 
 	if (length <= 0)
@@ -43,7 +43,7 @@ FormatStringV(const char *fmt, va_list args) noexcept
 AllocatedString<>
 FormatString(const char *fmt, ...) noexcept
 {
-	va_list args;
+	std::va_list args;
 	va_start(args, fmt);
 	auto p = FormatStringV(fmt, args);
 	va_end(args);

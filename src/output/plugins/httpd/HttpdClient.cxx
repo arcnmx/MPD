@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -27,8 +27,9 @@
 #include "net/UniqueSocketDescriptor.hxx"
 #include "Log.hxx"
 
-#include <assert.h>
-#include <string.h>
+#include <cassert>
+#include <cstring>
+
 #include <stdio.h>
 
 HttpdClient::~HttpdClient() noexcept
@@ -94,7 +95,7 @@ HttpdClient::HandleLine(const char *line) noexcept
 			should_reject = true;
 		}
 
-		line = strchr(line, ' ');
+		line = std::strchr(line, ' ');
 		if (line == nullptr || strncmp(line + 1, "HTTP/", 5) != 0) {
 			/* HTTP/0.9 without request headers */
 
@@ -412,7 +413,7 @@ HttpdClient::OnSocketInput(void *data, size_t length) noexcept
 	}
 
 	char *line = (char *)data;
-	char *newline = (char *)memchr(line, '\n', length);
+	char *newline = (char *)std::memchr(line, '\n', length);
 	if (newline == nullptr)
 		return InputResult::MORE;
 

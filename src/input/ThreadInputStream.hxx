@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -26,10 +26,9 @@
 #include "util/HugeAllocator.hxx"
 #include "util/CircularBuffer.hxx"
 
+#include <cassert>
+#include <cstdint>
 #include <exception>
-
-#include <assert.h>
-#include <stdint.h>
 
 /**
  * Helper class for moving InputStream implementations with blocking

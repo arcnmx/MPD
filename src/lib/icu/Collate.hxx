@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,6 +22,8 @@
 
 #include "util/Compiler.h"
 
+#include <string_view>
+
 /**
  * Throws #std::runtime_error on error.
  */
@@ -31,8 +33,8 @@ IcuCollateInit();
 void
 IcuCollateFinish() noexcept;
 
-gcc_pure gcc_nonnull_all
+gcc_pure
 int
-IcuCollate(const char *a, const char *b) noexcept;
+IcuCollate(std::string_view a, std::string_view b) noexcept;
 
 #endif

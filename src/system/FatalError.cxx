@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,25 +21,24 @@
 #include "util/Domain.hxx"
 #include "LogV.hxx"
 
-#include <unistd.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #ifdef _WIN32
 #include <windows.h>
 #else
-#include <errno.h>
+#include <cerrno>
 #endif
 
 static constexpr Domain fatal_error_domain("fatal_error");
 
-gcc_noreturn
+[[noreturn]]
 static void
 Abort()
 {
-	_exit(EXIT_FAILURE);
+	std::_Exit(EXIT_FAILURE);
 }
 
 void
@@ -52,7 +51,7 @@ FatalError(const char *msg)
 void
 FormatFatalError(const char *fmt, ...)
 {
-	va_list ap;
+	std::va_list ap;
 	va_start(ap, fmt);
 	LogFormatV(LogLevel::ERROR, fatal_error_domain, fmt, ap);
 	va_end(ap);
@@ -81,7 +80,7 @@ FatalSystemError(const char *msg)
 #ifdef _WIN32
 	FatalSystemError(msg, GetLastError());
 #else
-	const char *system_error = strerror(errno);
+	auto system_error = std::strerror(errno);
 	FormatError(fatal_error_domain, "%s: %s", msg, system_error);
 	Abort();
 #endif
@@ -91,9 +90,9 @@ void
 FormatFatalSystemError(const char *fmt, ...)
 {
 	char buffer[1024];
-	va_list ap;
+	std::va_list ap;
 	va_start(ap, fmt);
-	vsnprintf(buffer, sizeof(buffer), fmt, ap);
+	std::vsnprintf(buffer, sizeof(buffer), fmt, ap);
 	va_end(ap);
 
 	FatalSystemError(buffer);

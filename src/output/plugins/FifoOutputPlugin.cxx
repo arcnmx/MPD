@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -28,8 +28,9 @@
 #include "Log.hxx"
 #include "open.h"
 
+#include <cerrno>
+
 #include <sys/stat.h>
-#include <errno.h>
 #include <unistd.h>
 
 class FifoOutput final : AudioOutput {
@@ -42,9 +43,9 @@ class FifoOutput final : AudioOutput {
 	Timer *timer;
 
 public:
-	FifoOutput(const ConfigBlock &block);
+	explicit FifoOutput(const ConfigBlock &block);
 
-	~FifoOutput() {
+	~FifoOutput() override {
 		CloseFifo();
 	}
 
@@ -64,7 +65,7 @@ private:
 	void Open(AudioFormat &audio_format) override;
 	void Close() noexcept override;
 
-	std::chrono::steady_clock::duration Delay() const noexcept override;
+	[[nodiscard]] std::chrono::steady_clock::duration Delay() const noexcept override;
 	size_t Play(const void *chunk, size_t size) override;
 	void Cancel() noexcept override;
 };

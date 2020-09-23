@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  * Copyright (C) 2014-2015 François 'mmu_man' Revol
  *
@@ -22,6 +22,7 @@
 #include "../OutputAPI.hxx"
 #include "mixer/MixerList.hxx"
 #include "util/Domain.hxx"
+#include "util/Math.hxx"
 #include "system/Error.hxx"
 #include "Log.hxx"
 
@@ -36,8 +37,6 @@
 #include <Resources.h>
 #include <StringList.h>
 #include <SoundPlayer.h>
-
-#include <cmath>
 
 #include <string.h>
 
@@ -81,9 +80,9 @@ private:
 	std::chrono::steady_clock::duration Delay() const noexcept override;
 
 	static void _FillBuffer(void* cookie, void* _buffer, size_t size,
-		gcc_unused const media_raw_audio_format& _format);
+		[[maybe_unused]] const media_raw_audio_format& _format);
 	void FillBuffer(void* _buffer, size_t size,
-		gcc_unused const media_raw_audio_format& _format);
+		[[maybe_unused]] const media_raw_audio_format& _format);
 
 	void SendTag(const Tag &tag) override;
 };
@@ -154,7 +153,7 @@ HaikuOutput::_FillBuffer(void* cookie, void* buffer, size_t size,
 
 void
 HaikuOutput::FillBuffer(void* _buffer, size_t size,
-	gcc_unused const media_raw_audio_format& _format)
+	[[maybe_unused]] const media_raw_audio_format& _format)
 {
 
 	buffer = (uint8*)_buffer;
@@ -348,7 +347,7 @@ HaikuOutput::SendTag(const Tag &tag)
 	unsigned seconds = 0;
 	if (!tag.duration.IsNegative()) {
 		seconds = tag.duration.ToS();
-		snprintf(timebuf, sizeof(timebuf), "%02d:%02d:%02d",
+		snprintf(timebuf, sizeof(timebuf), "%02u:%02u:%02u",
 			 seconds / 3600, (seconds % 3600) / 60, seconds % 60);
 	}
 

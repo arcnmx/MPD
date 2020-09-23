@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -65,6 +65,11 @@ private:
 	bool initial_seek_pending;
 
 	/**
+	 * Are initial seek failures fatal?
+	 */
+	const bool initial_seek_essential;
+
+	/**
 	 * Is the initial seek currently running?  During this time,
 	 * the decoder command is SEEK.  This flag is set by
 	 * decoder_get_virtual_command(), when the virtual SEEK
@@ -112,6 +117,7 @@ private:
 
 public:
 	DecoderBridge(DecoderControl &_dc, bool _initial_seek_pending,
+		      bool _initial_seek_essential,
 		      std::unique_ptr<Tag> _tag) noexcept;
 
 	~DecoderBridge() noexcept;

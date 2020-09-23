@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,9 +23,9 @@
 #include "AndSongFilter.hxx"
 #include "util/Compiler.h"
 
+#include <cstdint>
 #include <string>
-
-#include <stdint.h>
+#include <string_view>
 
 /**
  * Special value for the db_selection_print() sort parameter.
@@ -106,7 +106,7 @@ public:
 	 * from all #LOCATE_TAG_BASE_TYPE items.  This is used to
 	 * filter songs in mounted databases.
 	 */
-	SongFilter WithoutBasePrefix(const char *prefix) const noexcept;
+	SongFilter WithoutBasePrefix(std::string_view prefix) const noexcept;
 };
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -160,7 +160,7 @@ NfsConnection::CancellableCallback::Callback(int err, void *data) noexcept
 			assert(close_fh == nullptr);
 
 			if (err >= 0) {
-				struct nfsfh *fh = (struct nfsfh *)data;
+				auto *fh = (struct nfsfh *)data;
 				connection.Close(fh);
 			}
 		} else if (close_fh != nullptr)
@@ -172,7 +172,7 @@ NfsConnection::CancellableCallback::Callback(int err, void *data) noexcept
 
 void
 NfsConnection::CancellableCallback::Callback(int err,
-					     gcc_unused struct nfs_context *nfs,
+					     [[maybe_unused]] struct nfs_context *nfs,
 					     void *data,
 					     void *private_data) noexcept
 {
@@ -191,7 +191,9 @@ static constexpr int
 events_to_libnfs(unsigned i) noexcept
 {
 	return ((i & SocketMonitor::READ) ? POLLIN : 0) |
-		((i & SocketMonitor::WRITE) ? POLLOUT : 0);
+		((i & SocketMonitor::WRITE) ? POLLOUT : 0) |
+		((i & SocketMonitor::HANGUP) ? POLLHUP : 0) |
+		((i & SocketMonitor::ERROR) ? POLLERR : 0);
 }
 
 NfsConnection::~NfsConnection() noexcept
@@ -450,8 +452,7 @@ NfsConnection::ScheduleSocket() noexcept
 		SocketMonitor::Open(_fd);
 	}
 
-	SocketMonitor::Schedule(libnfs_to_events(which_events)
-				| SocketMonitor::HANGUP);
+	SocketMonitor::Schedule(libnfs_to_events(which_events));
 }
 
 inline int
@@ -551,8 +552,8 @@ NfsConnection::OnSocketReady(unsigned flags) noexcept
 }
 
 inline void
-NfsConnection::MountCallback(int status, gcc_unused nfs_context *nfs,
-			     gcc_unused void *data) noexcept
+NfsConnection::MountCallback(int status, [[maybe_unused]] nfs_context *nfs,
+			     [[maybe_unused]] void *data) noexcept
 {
 	assert(GetEventLoop().IsInside());
 	assert(context == nfs);
@@ -574,7 +575,7 @@ void
 NfsConnection::MountCallback(int status, nfs_context *nfs, void *data,
 			     void *private_data) noexcept
 {
-	NfsConnection *c = (NfsConnection *)private_data;
+	auto *c = (NfsConnection *)private_data;
 
 	c->MountCallback(status, nfs, data);
 }

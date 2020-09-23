@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -27,7 +27,7 @@
 #include <winsock2.h>
 typedef DWORD socket_error_t;
 #else
-#include <errno.h>
+#include <cerrno>
 typedef int socket_error_t;
 #endif
 
@@ -82,7 +82,8 @@ IsSocketErrorClosed(socket_error_t code) noexcept
  */
 class SocketErrorMessage {
 #ifdef _WIN32
-	char msg[256];
+	static constexpr unsigned msg_size = 256;
+	char msg[msg_size];
 #else
 	const char *const msg;
 #endif

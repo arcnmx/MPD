@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -57,9 +57,9 @@ ParsePls(TextInputStream &is, std::forward_list<DetachedSong> &songs)
 
 	struct Entry {
 		std::string file, title;
-		int length;
+		int length{-1};
 
-		Entry():length(-1) {}
+		Entry() = default;
 	};
 
 	static constexpr unsigned MAX_ENTRIES = 65536;

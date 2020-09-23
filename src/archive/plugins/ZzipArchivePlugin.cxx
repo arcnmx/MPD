@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -27,9 +27,14 @@
 #include "../ArchiveVisitor.hxx"
 #include "input/InputStream.hxx"
 #include "fs/Path.hxx"
+#include "system/Error.hxx"
 #include "util/RuntimeError.hxx"
 
 #include <zzip/zzip.h>
+
+#include <utility>
+
+#include <inttypes.h> /* for PRIoffset (PRIu64) */
 
 struct ZzipDir {
 	ZZIP_DIR *const dir;
@@ -53,10 +58,11 @@ class ZzipArchiveFile final : public ArchiveFile {
 	std::shared_ptr<ZzipDir> dir;
 
 public:
-	ZzipArchiveFile(std::shared_ptr<ZzipDir> &&_dir)
-		:dir(std::move(_dir)) {}
+	template<typename D>
+	explicit ZzipArchiveFile(D &&_dir) noexcept
+		:dir(std::forward<D>(_dir)) {}
 
-	virtual void Visit(ArchiveVisitor &visitor) override;
+	void Visit(ArchiveVisitor &visitor) override;
 
 	InputStreamPtr OpenStream(const char *path,
 				  Mutex &mutex) override;
@@ -90,11 +96,12 @@ class ZzipInputStream final : public InputStream {
 	ZZIP_FILE *const file;
 
 public:
-	ZzipInputStream(const std::shared_ptr<ZzipDir> _dir, const char *_uri,
+	template<typename D>
+	ZzipInputStream(D &&_dir, const char *_uri,
 			Mutex &_mutex,
 			ZZIP_FILE *_file)
 		:InputStream(_uri, _mutex),
-		 dir(_dir), file(_file) {
+		 dir(std::forward<D>(_dir)), file(_file) {
 		//we are seekable (but its not recommendent to do so)
 		seekable = true;
 
@@ -105,12 +112,12 @@ public:
 		SetReady();
 	}
 
-	~ZzipInputStream() {
+	~ZzipInputStream() noexcept override {
 		zzip_file_close(file);
 	}
 
 	/* virtual methods from InputStream */
-	bool IsEOF() const noexcept override;
+	[[nodiscard]] bool IsEOF() const noexcept override;
 	size_t Read(std::unique_lock<Mutex> &lock,
 		    void *ptr, size_t size) override;
 	void Seek(std::unique_lock<Mutex> &lock, offset_type offset) override;
@@ -121,9 +128,19 @@ ZzipArchiveFile::OpenStream(const char *pathname,
 			    Mutex &mutex)
 {
 	ZZIP_FILE *_file = zzip_file_open(dir->dir, pathname, 0);
-	if (_file == nullptr)
-		throw FormatRuntimeError("not found in the ZIP file: %s",
-					 pathname);
+	if (_file == nullptr) {
+		const auto error = (zzip_error_t)zzip_error(dir->dir);
+		switch (error) {
+		case ZZIP_ENOENT:
+			throw FormatFileNotFound("Failed to open '%s' in ZIP file",
+						 pathname);
+
+		default:
+			throw FormatRuntimeError("Failed to open '%s' in ZIP file: %s",
+						 pathname,
+						 zzip_strerror(error));
+		}
+	}
 
 	return std::make_unique<ZzipInputStream>(dir, pathname,
 						 mutex,
@@ -135,12 +152,17 @@ ZzipInputStream::Read(std::unique_lock<Mutex> &, void *ptr, size_t read_size)
 {
 	const ScopeUnlock unlock(mutex);
 
-	int ret = zzip_file_read(file, ptr, read_size);
-	if (ret < 0)
+	zzip_ssize_t nbytes = zzip_file_read(file, ptr, read_size);
+	if (nbytes < 0)
 		throw std::runtime_error("zzip_file_read() has failed");
 
+	if (nbytes == 0 && !IsEOF())
+		throw FormatRuntimeError("Unexpected end of file %s"
+					 " at %" PRIoffset " of %" PRIoffset,
+					 GetURI(), GetOffset(), GetSize());
+
 	offset = zzip_tell(file);
-	return ret;
+	return nbytes;
 }
 
 bool

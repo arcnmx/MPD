@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -33,8 +33,15 @@
 #include "Instance.hxx"
 #include "Log.hxx"
 
-#include <set>
+#ifdef __clang__
+/* ignore -Wcomma due to strange code in boost/array.hpp (in Boost
+   1.72) */
+#pragma GCC diagnostic ignored "-Wcomma"
+#endif
+
 #include <boost/crc.hpp>
+
+#include <set>
 
 #define MOUNT_STATE_BEGIN        "mount_begin"
 #define MOUNT_STATE_END          "mount_end"
@@ -99,6 +106,17 @@ storage_state_restore(const char *line, TextFile &file, Instance &instance)
 
 	FormatDebug(storage_domain, "Restoring mount %s => %s", uri.c_str(), url.c_str());
 
+	auto &composite_storage = *(CompositeStorage *)instance.storage;
+	if (composite_storage.IsMountPoint(uri.c_str())) {
+		LogError(storage_domain, "Mount point busy");
+		return true;
+	}
+
+	if (composite_storage.IsMounted(url.c_str())) {
+		LogError(storage_domain, "This storage is already mounted");
+		return true;
+	}
+
 	auto &event_loop = instance.io_thread.GetEventLoop();
 	auto storage = CreateStorageURI(event_loop, url.c_str());
 	if (storage == nullptr) {
@@ -117,8 +135,7 @@ storage_state_restore(const char *line, TextFile &file, Instance &instance)
 		}
 	}
 
-	((CompositeStorage*)instance.storage)->Mount(uri.c_str(),
-						     std::move(storage));
+	composite_storage.Mount(uri.c_str(), std::move(storage));
 
 	return true;
 }
@@ -139,7 +156,7 @@ storage_state_get_hash(const Instance &instance)
 
 	boost::crc_32_type result;
 
-	for (auto mount: mounts) {
+	for (const auto& mount : mounts) {
 		result.process_bytes(mount.c_str(), mount.length());
 	}
 

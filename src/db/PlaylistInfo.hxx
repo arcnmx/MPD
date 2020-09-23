@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,6 +23,7 @@
 #include "util/Compiler.h"
 
 #include <string>
+#include <string_view>
 #include <chrono>
 
 /**
@@ -42,14 +43,15 @@ struct PlaylistInfo {
 		std::chrono::system_clock::time_point::min();
 
 	class CompareName {
-		const char *const name;
+		const std::string_view name;
 
 	public:
-		constexpr CompareName(const char *_name):name(_name) {}
+		constexpr CompareName(std::string_view _name) noexcept
+			:name(_name) {}
 
 		gcc_pure
 		bool operator()(const PlaylistInfo &pi) const noexcept {
-			return pi.name.compare(name) == 0;
+			return pi.name == name;
 		}
 	};
 

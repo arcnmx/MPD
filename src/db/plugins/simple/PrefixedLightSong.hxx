@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -29,9 +29,12 @@ class PrefixedLightSong : public LightSong {
 	std::string buffer;
 
 public:
-	PrefixedLightSong(const LightSong &song, const char *base)
+	template<typename B>
+	PrefixedLightSong(const LightSong &song, B &&base)
 		:LightSong(song),
-		 buffer(PathTraitsUTF8::Build(base, GetURI().c_str())) {
+		 buffer(PathTraitsUTF8::Build(std::forward<B>(base),
+					      GetURI()))
+	{
 		uri = buffer.c_str();
 		directory = nullptr;
 	}

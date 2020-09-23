@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -30,7 +30,7 @@ class PipeOutput final : AudioOutput {
 	const std::string cmd;
 	FILE *fh;
 
-	PipeOutput(const ConfigBlock &block);
+	explicit PipeOutput(const ConfigBlock &block);
 
 public:
 	static AudioOutput *Create(EventLoop &,
@@ -57,7 +57,7 @@ PipeOutput::PipeOutput(const ConfigBlock &block)
 }
 
 inline void
-PipeOutput::Open(gcc_unused AudioFormat &audio_format)
+PipeOutput::Open([[maybe_unused]] AudioFormat &audio_format)
 {
 	fh = popen(cmd.c_str(), "w");
 	if (fh == nullptr)

@@ -1,7 +1,10 @@
-conf.set('ENABLE_ENCODER', need_encoder)
+encoder_features = configuration_data()
+
+encoder_features.set('ENABLE_ENCODER', need_encoder)
 
 if not need_encoder
   encoder_glue_dep = dependency('', required: false)
+  configure_file(output: 'Features.h', configuration: encoder_features)
   subdir_done()
 endif
 
@@ -23,3 +26,5 @@ encoder_glue_dep = declare_dependency(
     encoder_plugins_dep,
   ],
 )
+
+configure_file(output: 'Features.h', configuration: encoder_features)

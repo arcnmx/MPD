@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,7 +23,7 @@
 #include "BufferedReader.hxx"
 #include "fs/Path.hxx"
 
-#include <assert.h>
+#include <cassert>
 
 TextFile::TextFile(Path path_fs)
 	:file_reader(std::make_unique<FileReader>(path_fs)),

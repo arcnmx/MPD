@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -35,10 +35,9 @@
 #include "util/Domain.hxx"
 #include "Log.hxx"
 
+#include <cassert>
 #include <string>
 #include <utility>
-
-#include <assert.h>
 
 #ifdef HAVE_UN
 #include <sys/stat.h>
@@ -77,7 +76,7 @@ public:
 			Close();
 	}
 
-	unsigned GetSerial() const noexcept {
+	[[nodiscard]] unsigned GetSerial() const noexcept {
 		return serial;
 	}
 
@@ -94,7 +93,7 @@ public:
 	using SocketMonitor::IsDefined;
 	using SocketMonitor::Close;
 
-	gcc_pure
+	[[nodiscard]] gcc_pure
 	std::string ToString() const noexcept {
 		return ::ToString(address);
 	}
@@ -162,7 +161,7 @@ ServerSocket::OneServerSocket::Accept() noexcept
 }
 
 bool
-ServerSocket::OneServerSocket::OnSocketReady(gcc_unused unsigned flags) noexcept
+ServerSocket::OneServerSocket::OnSocketReady([[maybe_unused]] unsigned flags) noexcept
 {
 	Accept();
 	return true;

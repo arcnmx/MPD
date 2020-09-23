@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,10 +23,8 @@
 
 #include <string.h>
 
-UPnPDevice::~UPnPDevice() noexcept
-{
-	/* this destructor exists here just so it won't get inlined */
-}
+/* this destructor exists here just so it won't get inlined */
+UPnPDevice::~UPnPDevice() noexcept = default;
 
 /**
  * An XML parser which constructs an UPnP device object from the
@@ -40,12 +38,12 @@ class UPnPDeviceParser final : public CommonExpatParser {
 	UPnPService m_tservice;
 
 public:
-	UPnPDeviceParser(UPnPDevice& device)
+	explicit UPnPDeviceParser(UPnPDevice& device)
 		:m_device(device),
 		 value(nullptr) {}
 
 protected:
-	virtual void StartElement(const XML_Char *name, const XML_Char **) {
+	void StartElement(const XML_Char *name, const XML_Char **) override {
 		value = nullptr;
 
 		switch (name[0]) {
@@ -80,17 +78,17 @@ protected:
 		}
 	}
 
-	virtual void EndElement(const XML_Char *name) {
+	void EndElement(const XML_Char *name) override {
 		if (value != nullptr) {
 			trimstring(*value);
 			value = nullptr;
 		} else if (!strcmp(name, "service")) {
 			m_device.services.emplace_back(std::move(m_tservice));
-			m_tservice.clear();
+			m_tservice = {};
 		}
 	}
 
-	virtual void CharacterData(const XML_Char *s, int len) {
+	void CharacterData(const XML_Char *s, int len) override {
 		if (value != nullptr)
 			value->append(s, len);
 	}

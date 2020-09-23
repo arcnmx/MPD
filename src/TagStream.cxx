@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -28,7 +28,7 @@
 #include "thread/Mutex.hxx"
 #include "util/UriExtract.hxx"
 
-#include <assert.h>
+#include <cassert>
 
 /**
  * Does the #DecoderPlugin support either the suffix or the MIME type?
@@ -43,7 +43,7 @@ CheckDecoderPlugin(const DecoderPlugin &plugin,
 }
 
 bool
-tag_stream_scan(InputStream &is, TagHandler &handler) noexcept
+tag_stream_scan(InputStream &is, TagHandler &handler)
 {
 	assert(is.IsReady());
 
@@ -81,7 +81,7 @@ tag_stream_scan(const char *uri, TagHandler &handler)
 
 bool
 tag_stream_scan(InputStream &is, TagBuilder &builder,
-		AudioFormat *audio_format) noexcept
+		AudioFormat *audio_format)
 {
 	assert(is.IsReady());
 

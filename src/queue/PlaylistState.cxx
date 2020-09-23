@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -92,7 +92,8 @@ playlist_state_save(BufferedOutputStream &os, const struct playlist &playlist,
 	os.Format(PLAYLIST_STATE_FILE_CONSUME "%i\n", playlist.queue.consume);
 	os.Format(PLAYLIST_STATE_FILE_CROSSFADE "%i\n",
 		  (int)pc.GetCrossFade().count());
-	os.Format(PLAYLIST_STATE_FILE_MIXRAMPDB "%f\n", pc.GetMixRampDb());
+	os.Format(PLAYLIST_STATE_FILE_MIXRAMPDB "%f\n",
+		  (double)pc.GetMixRampDb());
 	os.Format(PLAYLIST_STATE_FILE_MIXRAMPDELAY "%f\n",
 		  pc.GetMixRampDelay().count());
 	os.Write(PLAYLIST_STATE_FILE_PLAYLIST_BEGIN "\n");

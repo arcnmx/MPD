@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -24,7 +24,8 @@
 #include "fs/StandardDirectory.hxx"
 #include "util/RuntimeError.hxx"
 
-#include <assert.h>
+#include <cassert>
+
 #include <string.h>
 
 #ifndef _WIN32
@@ -102,7 +103,7 @@ ParsePath(const char *path)
 
 			++path;
 		} else {
-			const char *slash = strchr(path, '/');
+			const char *slash = std::strchr(path, '/');
 			const char *end = slash == nullptr
 					? path + strlen(path)
 					: slash;

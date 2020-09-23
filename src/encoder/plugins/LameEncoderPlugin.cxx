@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -19,16 +19,16 @@
 
 #include "LameEncoderPlugin.hxx"
 #include "../EncoderAPI.hxx"
-#include "AudioFormat.hxx"
+#include "pcm/AudioFormat.hxx"
 #include "util/NumberParser.hxx"
 #include "util/ReusableArray.hxx"
 #include "util/RuntimeError.hxx"
 
 #include <lame/lame.h>
 
+#include <cassert>
 #include <stdexcept>
 
-#include <assert.h>
 #include <string.h>
 
 class LameEncoder final : public Encoder {
@@ -57,12 +57,12 @@ class PreparedLameEncoder final : public PreparedEncoder {
 	int bitrate;
 
 public:
-	PreparedLameEncoder(const ConfigBlock &block);
+	explicit PreparedLameEncoder(const ConfigBlock &block);
 
 	/* virtual methods from class PreparedEncoder */
 	Encoder *Open(AudioFormat &audio_format) override;
 
-	const char *GetMimeType() const noexcept override {
+	[[nodiscard]] const char *GetMimeType() const noexcept override {
 		return "audio/mpeg";
 	}
 };
@@ -76,9 +76,9 @@ PreparedLameEncoder::PreparedLameEncoder(const ConfigBlock &block)
 	if (value != nullptr) {
 		/* a quality was configured (VBR) */
 
-		quality = ParseDouble(value, &endptr);
+		quality = float(ParseDouble(value, &endptr));
 
-		if (*endptr != '\0' || quality < -1.0 || quality > 10.0)
+		if (*endptr != '\0' || quality < -1.0f || quality > 10.0f)
 			throw FormatRuntimeError("quality \"%s\" is not a number in the "
 						 "range -1 to 10",
 						 value);
@@ -110,13 +110,13 @@ static void
 lame_encoder_setup(lame_global_flags *gfp, float quality, int bitrate,
 		   const AudioFormat &audio_format)
 {
-	if (quality >= -1.0) {
+	if (quality >= -1.0f) {
 		/* a quality was configured (VBR) */
 
 		if (0 != lame_set_VBR(gfp, vbr_rh))
 			throw std::runtime_error("error setting lame VBR mode");
 
-		if (0 != lame_set_VBR_q(gfp, quality))
+		if (0 != lame_set_VBR_q(gfp, int(quality)))
 			throw std::runtime_error("error setting lame VBR quality");
 	} else {
 		/* a bit rate was configured */
@@ -166,7 +166,7 @@ LameEncoder::~LameEncoder() noexcept
 void
 LameEncoder::Write(const void *data, size_t length)
 {
-	const int16_t *src = (const int16_t*)data;
+	const auto *src = (const int16_t*)data;
 
 	assert(output_begin == output_end);
 

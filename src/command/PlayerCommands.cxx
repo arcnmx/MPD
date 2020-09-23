@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -29,16 +29,14 @@
 #include "Partition.hxx"
 #include "Instance.hxx"
 #include "IdleFlags.hxx"
-#include "AudioFormat.hxx"
 #include "util/StringBuffer.hxx"
 #include "util/ScopeExit.hxx"
 #include "util/Exception.hxx"
+#include "util/Math.hxx"
 
 #ifdef ENABLE_DATABASE
 #include "db/update/Service.hxx"
 #endif
-
-#include <cmath>
 
 #define COMMAND_STATUS_STATE            "state"
 #define COMMAND_STATUS_REPEAT           "repeat"
@@ -61,7 +59,7 @@
 #define COMMAND_STATUS_UPDATING_DB	"updating_db"
 
 CommandResult
-handle_play(Client &client, Request args, gcc_unused Response &r)
+handle_play(Client &client, Request args, [[maybe_unused]] Response &r)
 {
 	int song = args.ParseOptional(0, -1);
 
@@ -70,7 +68,7 @@ handle_play(Client &client, Request args, gcc_unused Response &r)
 }
 
 CommandResult
-handle_playid(Client &client, Request args, gcc_unused Response &r)
+handle_playid(Client &client, Request args, [[maybe_unused]] Response &r)
 {
 	int id = args.ParseOptional(0, -1);
 
@@ -79,21 +77,21 @@ handle_playid(Client &client, Request args, gcc_unused Response &r)
 }
 
 CommandResult
-handle_stop(Client &client, gcc_unused Request args, gcc_unused Response &r)
+handle_stop(Client &client, [[maybe_unused]] Request args, [[maybe_unused]] Response &r)
 {
 	client.GetPartition().Stop();
 	return CommandResult::OK;
 }
 
 CommandResult
-handle_currentsong(Client &client, gcc_unused Request args, Response &r)
+handle_currentsong(Client &client, [[maybe_unused]] Request args, Response &r)
 {
 	playlist_print_current(r, client.GetPlaylist());
 	return CommandResult::OK;
 }
 
 CommandResult
-handle_pause(Client &client, Request args, gcc_unused Response &r)
+handle_pause(Client &client, Request args, [[maybe_unused]] Response &r)
 {
 	auto &pc = client.GetPlayerControl();
 
@@ -107,9 +105,10 @@ handle_pause(Client &client, Request args, gcc_unused Response &r)
 }
 
 CommandResult
-handle_status(Client &client, gcc_unused Request args, Response &r)
+handle_status(Client &client, [[maybe_unused]] Request args, Response &r)
 {
-	auto &pc = client.GetPlayerControl();
+	auto &partition = client.GetPartition();
+	auto &pc = partition.pc;
 
 	const char *state = nullptr;
 	int song;
@@ -128,9 +127,9 @@ handle_status(Client &client, gcc_unused Request args, Response &r)
 		break;
 	}
 
-	const playlist &playlist = client.GetPlaylist();
+	const auto &playlist = partition.playlist;
 
-	const auto volume = volume_level_get(client.GetPartition().outputs);
+	const auto volume = volume_level_get(partition.outputs);
 	if (volume >= 0)
 		r.Format("volume: %i\n", volume);
 
@@ -138,6 +137,7 @@ handle_status(Client &client, gcc_unused Request args, Response &r)
 		 COMMAND_STATUS_RANDOM ": %i\n"
 		 COMMAND_STATUS_SINGLE ": %s\n"
 		 COMMAND_STATUS_CONSUME ": %i\n"
+		 "partition: %s\n"
 		 COMMAND_STATUS_PLAYLIST ": %li\n"
 		 COMMAND_STATUS_PLAYLIST_LENGTH ": %i\n"
 		 COMMAND_STATUS_MIXRAMPDB ": %f\n"
@@ -146,14 +146,15 @@ handle_status(Client &client, gcc_unused Request args, Response &r)
 		 playlist.GetRandom(),
 		 SingleToString(playlist.GetSingle()),
 		 playlist.GetConsume(),
+		 partition.name.c_str(),
 		 (unsigned long)playlist.GetVersion(),
 		 playlist.GetLength(),
-		 pc.GetMixRampDb(),
+		 (double)pc.GetMixRampDb(),
 		 state);
 
 	if (pc.GetCrossFade() > FloatDuration::zero())
 		r.Format(COMMAND_STATUS_CROSSFADE ": %lu\n",
-			 std::lround(pc.GetCrossFade().count()));
+			 lround(pc.GetCrossFade().count()));
 
 	if (pc.GetMixRampDelay() > FloatDuration::zero())
 		r.Format(COMMAND_STATUS_MIXRAMPDELAY ": %f\n",
@@ -172,7 +173,7 @@ handle_status(Client &client, gcc_unused Request args, Response &r)
 			 COMMAND_STATUS_BITRATE ": %u\n",
 			 player_status.elapsed_time.RoundS(),
 			 player_status.total_time.IsNegative()
-			 ? 0u
+			 ? 0U
 			 : unsigned(player_status.total_time.RoundS()),
 			 player_status.elapsed_time.ToDoubleS(),
 			 player_status.bit_rate);
@@ -187,7 +188,7 @@ handle_status(Client &client, gcc_unused Request args, Response &r)
 	}
 
 #ifdef ENABLE_DATABASE
-	const UpdateService *update_service = client.GetInstance().update;
+	const UpdateService *update_service = partition.instance.update;
 	unsigned updateJobId = update_service != nullptr
 		? update_service->GetId()
 		: 0;
@@ -214,7 +215,7 @@ handle_status(Client &client, gcc_unused Request args, Response &r)
 }
 
 CommandResult
-handle_next(Client &client, gcc_unused Request args, gcc_unused Response &r)
+handle_next(Client &client, [[maybe_unused]] Request args, [[maybe_unused]] Response &r)
 {
 	playlist &playlist = client.GetPlaylist();
 
@@ -232,15 +233,15 @@ handle_next(Client &client, gcc_unused Request args, gcc_unused Response &r)
 }
 
 CommandResult
-handle_previous(Client &client, gcc_unused Request args,
-		gcc_unused Response &r)
+handle_previous(Client &client, [[maybe_unused]] Request args,
+		[[maybe_unused]] Response &r)
 {
 	client.GetPartition().PlayPrevious();
 	return CommandResult::OK;
 }
 
 CommandResult
-handle_repeat(Client &client, Request args, gcc_unused Response &r)
+handle_repeat(Client &client, Request args, [[maybe_unused]] Response &r)
 {
 	bool status = args.ParseBool(0);
 	client.GetPartition().SetRepeat(status);
@@ -248,7 +249,7 @@ handle_repeat(Client &client, Request args, gcc_unused Response &r)
 }
 
 CommandResult
-handle_single(Client &client, Request args, gcc_unused Response &r)
+handle_single(Client &client, Request args, [[maybe_unused]] Response &r)
 {
 	auto new_mode = SingleFromString(args.front());
 	client.GetPartition().SetSingle(new_mode);
@@ -256,7 +257,7 @@ handle_single(Client &client, Request args, gcc_unused Response &r)
 }
 
 CommandResult
-handle_consume(Client &client, Request args, gcc_unused Response &r)
+handle_consume(Client &client, Request args, [[maybe_unused]] Response &r)
 {
 	bool status = args.ParseBool(0);
 	client.GetPartition().SetConsume(status);
@@ -264,7 +265,7 @@ handle_consume(Client &client, Request args, gcc_unused Response &r)
 }
 
 CommandResult
-handle_random(Client &client, Request args, gcc_unused Response &r)
+handle_random(Client &client, Request args, [[maybe_unused]] Response &r)
 {
 	bool status = args.ParseBool(0);
 	auto &partition = client.GetPartition();
@@ -274,15 +275,15 @@ handle_random(Client &client, Request args, gcc_unused Response &r)
 }
 
 CommandResult
-handle_clearerror(Client &client, gcc_unused Request args,
-		  gcc_unused Response &r)
+handle_clearerror(Client &client, [[maybe_unused]] Request args,
+		  [[maybe_unused]] Response &r)
 {
 	client.GetPlayerControl().LockClearError();
 	return CommandResult::OK;
 }
 
 CommandResult
-handle_seek(Client &client, Request args, gcc_unused Response &r)
+handle_seek(Client &client, Request args, [[maybe_unused]] Response &r)
 {
 	unsigned song = args.ParseUnsigned(0);
 	SongTime seek_time = args.ParseSongTime(1);
@@ -292,7 +293,7 @@ handle_seek(Client &client, Request args, gcc_unused Response &r)
 }
 
 CommandResult
-handle_seekid(Client &client, Request args, gcc_unused Response &r)
+handle_seekid(Client &client, Request args, [[maybe_unused]] Response &r)
 {
 	unsigned id = args.ParseUnsigned(0);
 	SongTime seek_time = args.ParseSongTime(1);
@@ -302,7 +303,7 @@ handle_seekid(Client &client, Request args, gcc_unused Response &r)
 }
 
 CommandResult
-handle_seekcur(Client &client, Request args, gcc_unused Response &r)
+handle_seekcur(Client &client, Request args, [[maybe_unused]] Response &r)
 {
 	const char *p = args.front();
 	bool relative = *p == '+' || *p == '-';
@@ -313,7 +314,7 @@ handle_seekcur(Client &client, Request args, gcc_unused Response &r)
 }
 
 CommandResult
-handle_crossfade(Client &client, Request args, gcc_unused Response &r)
+handle_crossfade(Client &client, Request args, [[maybe_unused]] Response &r)
 {
 	FloatDuration duration{args.ParseUnsigned(0)};
 	client.GetPlayerControl().SetCrossFade(duration);
@@ -321,7 +322,7 @@ handle_crossfade(Client &client, Request args, gcc_unused Response &r)
 }
 
 CommandResult
-handle_mixrampdb(Client &client, Request args, gcc_unused Response &r)
+handle_mixrampdb(Client &client, Request args, [[maybe_unused]] Response &r)
 {
 	float db = args.ParseFloat(0);
 	client.GetPlayerControl().SetMixRampDb(db);
@@ -329,7 +330,7 @@ handle_mixrampdb(Client &client, Request args, gcc_unused Response &r)
 }
 
 CommandResult
-handle_mixrampdelay(Client &client, Request args, gcc_unused Response &r)
+handle_mixrampdelay(Client &client, Request args, [[maybe_unused]] Response &r)
 {
 	FloatDuration delay_secs{args.ParseFloat(0)};
 	client.GetPlayerControl().SetMixRampDelay(delay_secs);
@@ -347,7 +348,7 @@ handle_replay_gain_mode(Client &client, Request args, Response &)
 }
 
 CommandResult
-handle_replay_gain_status(Client &client, gcc_unused Request args,
+handle_replay_gain_status(Client &client, [[maybe_unused]] Request args,
 			  Response &r)
 {
 	r.Format("replay_gain_mode: %s\n",

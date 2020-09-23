@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -24,6 +24,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 
 struct StorageFileInfo;
 class AllocatedPath;
@@ -51,18 +52,18 @@ public:
 	/**
 	 * Throws #std::runtime_error on error.
 	 */
-	virtual StorageFileInfo GetInfo(const char *uri_utf8, bool follow) = 0;
+	virtual StorageFileInfo GetInfo(std::string_view uri_utf8, bool follow) = 0;
 
 	/**
 	 * Throws #std::runtime_error on error.
 	 */
-	virtual std::unique_ptr<StorageDirectoryReader> OpenDirectory(const char *uri_utf8) = 0;
+	virtual std::unique_ptr<StorageDirectoryReader> OpenDirectory(std::string_view uri_utf8) = 0;
 
 	/**
 	 * Map the given relative URI to an absolute URI.
 	 */
 	gcc_pure
-	virtual std::string MapUTF8(const char *uri_utf8) const noexcept = 0;
+	virtual std::string MapUTF8(std::string_view uri_utf8) const noexcept = 0;
 
 	/**
 	 * Map the given relative URI to a local file path.  Returns
@@ -70,11 +71,11 @@ public:
 	 * support local files.
 	 */
 	gcc_pure
-	virtual AllocatedPath MapFS(const char *uri_utf8) const noexcept;
+	virtual AllocatedPath MapFS(std::string_view uri_utf8) const noexcept;
 
 	gcc_pure
-	AllocatedPath MapChildFS(const char *uri_utf8,
-				 const char *child_utf8) const noexcept;
+	AllocatedPath MapChildFS(std::string_view uri_utf8,
+				 std::string_view child_utf8) const noexcept;
 
 	/**
 	 * Check if the given URI points inside this storage.  If yes,
@@ -82,7 +83,7 @@ public:
 	 * string); if not, returns nullptr.
 	 */
 	gcc_pure
-	virtual const char *MapToRelativeUTF8(const char *uri_utf8) const noexcept = 0;
+	virtual std::string_view MapToRelativeUTF8(std::string_view uri_utf8) const noexcept = 0;
 };
 
 #endif

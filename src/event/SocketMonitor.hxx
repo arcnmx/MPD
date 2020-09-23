@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,10 +23,9 @@
 #include "PollGroup.hxx"
 #include "net/SocketDescriptor.hxx"
 
+#include <cassert>
+#include <cstddef>
 #include <type_traits>
-
-#include <assert.h>
-#include <stddef.h>
 
 class EventLoop;
 
@@ -98,22 +97,26 @@ public:
 		return scheduled_flags;
 	}
 
-	void Schedule(unsigned flags) noexcept;
+	/**
+	 * @return true on success, false on error (with errno set if
+	 * USE_EPOLL is defined)
+	 */
+	bool Schedule(unsigned flags) noexcept;
 
 	void Cancel() noexcept {
 		Schedule(0);
 	}
 
-	void ScheduleRead() noexcept {
-		Schedule(GetScheduledFlags() | READ | HANGUP | ERROR);
+	bool ScheduleRead() noexcept {
+		return Schedule(GetScheduledFlags() | READ);
 	}
 
-	void ScheduleWrite() noexcept {
-		Schedule(GetScheduledFlags() | WRITE);
+	bool ScheduleWrite() noexcept {
+		return Schedule(GetScheduledFlags() | WRITE);
 	}
 
 	void CancelRead() noexcept {
-		Schedule(GetScheduledFlags() & ~(READ|HANGUP|ERROR));
+		Schedule(GetScheduledFlags() & ~READ);
 	}
 
 	void CancelWrite() noexcept {

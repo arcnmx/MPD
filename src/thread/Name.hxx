@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -58,7 +58,7 @@ SetThreadName(const char *name) noexcept
 
 template<typename... Args>
 static inline void
-FormatThreadName(const char *fmt, gcc_unused Args&&... args) noexcept
+FormatThreadName(const char *fmt, [[maybe_unused]] Args&&... args) noexcept
 {
 #ifdef HAVE_THREAD_NAME
 	SetThreadName(StringFormat<16>(fmt, args...));

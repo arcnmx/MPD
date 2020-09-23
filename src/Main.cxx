@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -27,7 +27,6 @@
 #include "Mapper.hxx"
 #include "Permission.hxx"
 #include "Listen.hxx"
-#include "client/Listener.hxx"
 #include "client/Config.hxx"
 #include "client/List.hxx"
 #include "command/AllCommands.hxx"
@@ -46,7 +45,7 @@
 #include "playlist/PlaylistRegistry.hxx"
 #include "zeroconf/ZeroconfGlue.hxx"
 #include "decoder/DecoderList.hxx"
-#include "AudioParser.hxx"
+#include "pcm/AudioParser.hxx"
 #include "pcm/Convert.hxx"
 #include "unix/SignalHandlers.hxx"
 #include "thread/Slack.hxx"
@@ -110,13 +109,11 @@
 #include <systemd/sd-daemon.h>
 #endif
 
-#include <stdlib.h>
+#include <climits>
 
-#ifdef HAVE_LOCALE_H
-#include <locale.h>
+#ifdef HAVE_CLOCALE
+#include <clocale>
 #endif
-
-#include <limits.h>
 
 static constexpr size_t KILOBYTE = 1024;
 static constexpr size_t MEGABYTE = 1024 * KILOBYTE;
@@ -173,7 +170,7 @@ InitStorage(Instance &instance, EventLoop &event_loop,
 	if (storage == nullptr)
 		return;
 
-	CompositeStorage *composite = new CompositeStorage();
+	auto *composite = new CompositeStorage();
 	instance.storage = composite;
 	composite->Mount("", std::move(storage));
 }
@@ -197,16 +194,16 @@ glue_db_init_and_load(Instance &instance, const ConfigData &config)
 			    config);
 
 		if (instance.storage == nullptr) {
-			LogDefault(config_domain,
-				   "Found database setting without "
-				   "music_directory - disabling database");
+			LogNotice(config_domain,
+				  "Found database setting without "
+				  "music_directory - disabling database");
 			return true;
 		}
 	} else {
 		if (IsStorageConfigured(config))
-			LogDefault(config_domain,
-				   "Ignoring the storage configuration "
-				   "because the database does not need it");
+			LogNotice(config_domain,
+				  "Ignoring the storage configuration "
+				  "because the database does not need it");
 	}
 
 	try {
@@ -263,9 +260,9 @@ glue_state_file_init(Instance &instance, const ConfigData &raw_config)
 	if (!config.IsEnabled())
 		return;
 
-	instance.state_file = new StateFile(std::move(config),
-					    instance.partitions.front(),
-					    instance.event_loop);
+	instance.state_file = std::make_unique< StateFile>(std::move(config),
+							   instance.partitions.front(),
+							   instance.event_loop);
 	instance.state_file->Read();
 }
 
@@ -349,21 +346,8 @@ inline void
 Instance::BeginShutdownPartitions() noexcept
 {
 	for (auto &partition : partitions) {
-		partition.pc.Kill();
-		partition.listener.reset();
+		partition.BeginShutdown();
 	}
-}
-
-void
-Instance::OnIdle(unsigned flags) noexcept
-{
-	/* send "idle" notifications to all subscribed
-	   clients */
-	client_list->IdleAdd(flags);
-
-	if (flags & (IDLE_PLAYLIST|IDLE_PLAYER|IDLE_MIXER|IDLE_OUTPUT) &&
-	    state_file != nullptr)
-		state_file->CheckModified();
 }
 
 static inline void
@@ -374,10 +358,10 @@ MainConfigured(const struct options &options, const ConfigData &raw_config)
 #endif
 
 #ifndef ANDROID
-#ifdef HAVE_LOCALE_H
+#ifdef HAVE_CLOCALE
 	/* initialize locale */
-	setlocale(LC_CTYPE,"");
-	setlocale(LC_COLLATE, "");
+	std::setlocale(LC_CTYPE,"");
+	std::setlocale(LC_COLLATE, "");
 #endif
 #endif
 
@@ -413,7 +397,7 @@ MainConfigured(const struct options &options, const ConfigData &raw_config)
 #endif
 
 	const unsigned max_clients =
-		raw_config.GetPositive(ConfigOption::MAX_CONN, 10);
+		raw_config.GetPositive(ConfigOption::MAX_CONN, 100);
 	instance.client_list = std::make_unique<ClientList>(max_clients);
 
 	const auto *input_cache_config = raw_config.GetBlock(ConfigBlockOption::INPUT_CACHE);
@@ -461,8 +445,7 @@ MainConfigured(const struct options &options, const ConfigData &raw_config)
 	for (auto &partition : instance.partitions) {
 		partition.outputs.Configure(instance.rtio_thread.GetEventLoop(),
 					    raw_config,
-					    config.replay_gain,
-					    partition.pc);
+					    config.replay_gain);
 		partition.UpdateEffectiveReplayGainMode();
 	}
 
@@ -479,7 +462,7 @@ MainConfigured(const struct options &options, const ConfigData &raw_config)
 #ifndef ANDROID
 	setup_log_output();
 
-	const ScopeSignalHandlersInit signal_handlers_init(instance.event_loop);
+	const ScopeSignalHandlersInit signal_handlers_init(instance);
 #endif
 
 	instance.io_thread.Start();
@@ -553,11 +536,6 @@ MainConfigured(const struct options &options, const ConfigData &raw_config)
 	/* cleanup */
 
 	instance.BeginShutdownUpdate();
-
-	if (instance.state_file != nullptr) {
-		instance.state_file->Write();
-		delete instance.state_file;
-	}
 
 	ZeroconfDeinit();
 

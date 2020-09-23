@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -44,6 +44,10 @@ ApplyTagFallback(TagType type, F &&f) noexcept
 		/* fall back to "Artist" if no
 		   "AlbumArtist"/"ArtistSort" was found */
 		return f(TAG_ARTIST);
+
+	if (type == TAG_ALBUM_SORT)
+		/* fall back to "Album" if no "AlbumSort" was found */
+		return f(TAG_ALBUM);
 
 	return false;
 }

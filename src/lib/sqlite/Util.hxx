@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -25,7 +25,7 @@
 
 #include <sqlite3.h>
 
-#include <assert.h>
+#include <cassert>
 
 namespace Sqlite {
 
@@ -54,7 +54,7 @@ Bind(sqlite3_stmt *stmt, unsigned i, const char *value)
 
 template<typename... Args>
 static void
-BindAll2(gcc_unused sqlite3_stmt *stmt, gcc_unused unsigned i)
+BindAll2([[maybe_unused]] sqlite3_stmt *stmt, [[maybe_unused]] unsigned i)
 {
 	assert(int(i - 1) == sqlite3_bind_parameter_count(stmt));
 }

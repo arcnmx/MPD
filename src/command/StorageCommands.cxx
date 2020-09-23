@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -37,15 +37,14 @@
 #include "TimePrint.hxx"
 #include "IdleFlags.hxx"
 
+#include <cinttypes> /* for PRIu64 */
 #include <memory>
-
-#include <inttypes.h> /* for PRIu64 */
 
 gcc_pure
 static bool
 skip_path(const char *name_utf8) noexcept
 {
-	return strchr(name_utf8, '\n') != nullptr;
+	return std::strchr(name_utf8, '\n') != nullptr;
 }
 
 #if defined(_WIN32) && GCC_CHECK_VERSION(4,6)
@@ -144,7 +143,7 @@ print_storage_uri(Client &client, Response &r, const Storage &storage)
 }
 
 CommandResult
-handle_listmounts(Client &client, gcc_unused Request args, Response &r)
+handle_listmounts(Client &client, [[maybe_unused]] Request args, Response &r)
 {
 	Storage *_composite = client.GetInstance().storage;
 	if (_composite == nullptr) {
@@ -186,13 +185,23 @@ handle_mount(Client &client, Request args, Response &r)
 		return CommandResult::ERROR;
 	}
 
-	if (strchr(local_uri, '/') != nullptr) {
+	if (std::strchr(local_uri, '/') != nullptr) {
 		/* allow only top-level mounts for now */
 		/* TODO: eliminate this limitation after ensuring that
 		   UpdateQueue::Erase() really gets called for every
 		   unmount, and no Directory disappears recursively
 		   during database update */
 		r.Error(ACK_ERROR_ARG, "Bad mount point");
+		return CommandResult::ERROR;
+	}
+
+	if (composite.IsMountPoint(local_uri)) {
+		r.Error(ACK_ERROR_ARG, "Mount point busy");
+		return CommandResult::ERROR;
+	}
+
+	if (composite.IsMounted(remote_uri)) {
+		r.Error(ACK_ERROR_ARG, "This storage is already mounted");
 		return CommandResult::ERROR;
 	}
 
@@ -208,8 +217,10 @@ handle_mount(Client &client, Request args, Response &r)
 
 #ifdef ENABLE_DATABASE
 	if (auto *db = dynamic_cast<SimpleDatabase *>(instance.GetDatabase())) {
+		bool need_update;
+
 		try {
-			db->Mount(local_uri, remote_uri);
+			need_update = !db->Mount(local_uri, remote_uri);
 		} catch (...) {
 			composite.Unmount(local_uri);
 			throw;
@@ -218,6 +229,12 @@ handle_mount(Client &client, Request args, Response &r)
 		// TODO: call Instance::OnDatabaseModified()?
 		// TODO: trigger database update?
 		instance.EmitIdle(IDLE_DATABASE);
+
+		if (need_update) {
+			UpdateService *update = client.GetInstance().update;
+			if (update != nullptr)
+				update->Enqueue(local_uri, false);
+		}
 	}
 #endif
 

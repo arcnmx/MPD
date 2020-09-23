@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -26,7 +26,8 @@
 #include "fs/io/BufferedOutputStream.hxx"
 #include "Log.hxx"
 
-#include <assert.h>
+#include <cassert>
+
 #include <stdlib.h>
 
 #define SW_VOLUME_STATE                         "sw_volume: "

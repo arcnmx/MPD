@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,22 +21,21 @@
 #include "WavpackDecoderPlugin.hxx"
 #include "../DecoderAPI.hxx"
 #include "input/InputStream.hxx"
-#include "CheckAudioFormat.hxx"
+#include "pcm/CheckAudioFormat.hxx"
 #include "tag/Handler.hxx"
 #include "fs/Path.hxx"
 #include "util/Alloc.hxx"
+#include "util/Math.hxx"
 #include "util/ScopeExit.hxx"
 #include "util/RuntimeError.hxx"
 
 #include <wavpack/wavpack.h>
 
 #include <algorithm>
+#include <cassert>
+#include <cstdlib>
 #include <iterator>
 #include <memory>
-
-#include <cstdlib>
-
-#include <assert.h>
 
 #define ERRORLEN 80
 
@@ -127,7 +126,7 @@ template<typename T>
 static void
 format_samples_int(void *buffer, uint32_t count)
 {
-	int32_t *src = (int32_t *)buffer;
+	auto *src = (int32_t *)buffer;
 	T *dst = (T *)buffer;
 	/*
 	 * The asserts like the following one are because we do the
@@ -145,7 +144,7 @@ format_samples_int(void *buffer, uint32_t count)
  * No conversion necessary.
  */
 static void
-format_samples_nop(gcc_unused void *buffer, gcc_unused uint32_t count)
+format_samples_nop([[maybe_unused]] void *buffer, [[maybe_unused]] uint32_t count)
 {
 	/* do nothing */
 }
@@ -265,8 +264,7 @@ wavpack_decode(DecoderClient &client, WavpackContext *wpc, bool can_seek)
 		if (samples_got == 0)
 			break;
 
-		int bitrate = (int)(WavpackGetInstantBitrate(wpc) / 1000 +
-				    0.5);
+		int bitrate = lround(WavpackGetInstantBitrate(wpc) / 1000);
 		format_samples(chunk, samples_got * audio_format.channels);
 
 		cmd = client.SubmitData(nullptr, chunk,
@@ -291,7 +289,7 @@ struct WavpackInput {
 
 	int32_t ReadBytes(void *data, size_t bcount);
 
-	InputStream::offset_type GetPos() const {
+	[[nodiscard]] InputStream::offset_type GetPos() const {
 		return is.GetOffset();
 	}
 
@@ -337,14 +335,14 @@ struct WavpackInput {
 		}
 	}
 
-	InputStream::offset_type GetLength() const {
+	[[nodiscard]] InputStream::offset_type GetLength() const {
 		if (!is.KnownSize())
 			return 0;
 
 		return is.GetSize();
 	}
 
-	bool CanSeek() const {
+	[[nodiscard]] bool CanSeek() const {
 		return is.IsSeekable();
 	}
 };
@@ -368,7 +366,7 @@ wavpack_input_read_bytes(void *id, void *data, int32_t bcount)
 int32_t
 WavpackInput::ReadBytes(void *data, size_t bcount)
 {
-	uint8_t *buf = (uint8_t *)data;
+	auto *buf = (uint8_t *)data;
 	int32_t i = 0;
 
 	if (last_byte != EOF) {
@@ -400,21 +398,21 @@ WavpackInput::ReadBytes(void *data, size_t bcount)
 static int64_t
 wavpack_input_get_pos(void *id)
 {
-	WavpackInput &wpi = *wpin(id);
+	const auto &wpi = *wpin(id);
 	return wpi.GetPos();
 }
 
 static int
 wavpack_input_set_pos_abs(void *id, int64_t pos)
 {
-	WavpackInput &wpi = *wpin(id);
+	auto &wpi = *wpin(id);
 	return wpi.SetPosAbs(pos);
 }
 
 static int
 wavpack_input_set_pos_rel(void *id, int64_t delta, int mode)
 {
-	WavpackInput &wpi = *wpin(id);
+	auto &wpi = *wpin(id);
 	return wpi.SetPosRel(delta, mode);
 }
 
@@ -423,21 +421,21 @@ wavpack_input_set_pos_rel(void *id, int64_t delta, int mode)
 static uint32_t
 wavpack_input_get_pos(void *id)
 {
-	WavpackInput &wpi = *wpin(id);
+	const auto &wpi = *wpin(id);
 	return wpi.GetPos();
 }
 
 static int
 wavpack_input_set_pos_abs(void *id, uint32_t pos)
 {
-	WavpackInput &wpi = *wpin(id);
+	auto &wpi = *wpin(id);
 	return wpi.SetPosAbs(pos);
 }
 
 static int
 wavpack_input_set_pos_rel(void *id, int32_t delta, int mode)
 {
-	WavpackInput &wpi = *wpin(id);
+	auto &wpi = *wpin(id);
 	return wpi.SetPosRel(delta, mode);
 }
 
@@ -446,7 +444,7 @@ wavpack_input_set_pos_rel(void *id, int32_t delta, int mode)
 static int
 wavpack_input_push_back_byte(void *id, int c)
 {
-	WavpackInput &wpi = *wpin(id);
+	auto &wpi = *wpin(id);
 	return wpi.PushBackByte(c);
 }
 
@@ -455,7 +453,7 @@ wavpack_input_push_back_byte(void *id, int c)
 static int64_t
 wavpack_input_get_length(void *id)
 {
-	WavpackInput &wpi = *wpin(id);
+	const auto &wpi = *wpin(id);
 	return wpi.GetLength();
 }
 
@@ -464,7 +462,7 @@ wavpack_input_get_length(void *id)
 static uint32_t
 wavpack_input_get_length(void *id)
 {
-	WavpackInput &wpi = *wpin(id);
+	const auto &wpi = *wpin(id);
 	return wpi.GetLength();
 }
 
@@ -473,7 +471,7 @@ wavpack_input_get_length(void *id)
 static int
 wavpack_input_can_seek(void *id)
 {
-	WavpackInput &wpi = *wpin(id);
+	const auto &wpi = *wpin(id);
 	return wpi.CanSeek();
 }
 
@@ -544,7 +542,7 @@ wavpack_streamdecode(DecoderClient &client, InputStream &is)
 		open_flags |= OPEN_WVC;
 		can_seek &= is_wvc->IsSeekable();
 
-		wvc.reset(new WavpackInput(&client, *is_wvc));
+		wvc = std::make_unique<WavpackInput>(&client, *is_wvc);
 	}
 
 	if (!can_seek) {
@@ -614,7 +612,7 @@ wavpack_scan_file(Path path_fs, TagHandler &handler) noexcept
 }
 
 static bool
-wavpack_scan_stream(InputStream &is, TagHandler &handler) noexcept
+wavpack_scan_stream(InputStream &is, TagHandler &handler)
 {
 	WavpackInput isp(nullptr, is);
 

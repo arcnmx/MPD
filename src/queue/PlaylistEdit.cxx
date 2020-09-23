@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -327,7 +327,7 @@ playlist::MoveRange(PlayerControl &pc,
 		throw PlaylistError::BadRange();
 
 	if ((to >= 0 && to + end - start - 1 >= GetLength()) ||
-	    (to < 0 && unsigned(abs(to)) > GetLength()))
+	    (to < 0 && unsigned(std::abs(to)) > GetLength()))
 		throw PlaylistError::BadRange();
 
 	if ((int)start == to)
@@ -350,7 +350,7 @@ playlist::MoveRange(PlayerControl &pc,
 		if (start <= (unsigned)currentSong && (unsigned)currentSong < end)
 			/* no-op, can't be moved to offset of itself */
 			return;
-		to = (currentSong + abs(to)) % GetLength();
+		to = (currentSong + std::abs(to)) % GetLength();
 		if (start < (unsigned)to)
 			to -= end - start;
 	}
@@ -430,6 +430,8 @@ playlist::SetSongIdRange(PlayerControl &pc, unsigned id,
 	if (position < 0)
 		throw PlaylistError::NoSuchSong();
 
+	bool was_queued = false;
+
 	if (playing) {
 		if (position == current)
 			throw PlaylistError(PlaylistResult::DENIED,
@@ -441,6 +443,10 @@ playlist::SetSongIdRange(PlayerControl &pc, unsigned id,
 			   already; cancel that */
 			pc.LockCancel();
 			queued = -1;
+
+			/* schedule a call to UpdateQueuedSong() to
+			   re-queue the song with its new range */
+			was_queued = true;
 		}
 	}
 
@@ -463,7 +469,8 @@ playlist::SetSongIdRange(PlayerControl &pc, unsigned id,
 	song.SetEndTime(end);
 
 	/* announce the change to all interested subsystems */
-	UpdateQueuedSong(pc, nullptr);
+	if (was_queued)
+		UpdateQueuedSong(pc, nullptr);
 	queue.ModifyAtPosition(position);
 	OnModified();
 }

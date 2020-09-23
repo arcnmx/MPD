@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,7 +20,7 @@
 #include "FlacStreamMetadata.hxx"
 #include "FlacAudioFormat.hxx"
 #include "ScanVorbisComment.hxx"
-#include "CheckAudioFormat.hxx"
+#include "pcm/CheckAudioFormat.hxx"
 #include "MixRampInfo.hxx"
 #include "tag/Handler.hxx"
 #include "tag/Builder.hxx"
@@ -30,7 +30,7 @@
 #include "ReplayGainInfo.hxx"
 #include "util/StringView.hxx"
 
-#include <assert.h>
+#include <cassert>
 
 static StringView
 ToStringView(const FLAC__StreamMetadata_VorbisComment_Entry &entry) noexcept

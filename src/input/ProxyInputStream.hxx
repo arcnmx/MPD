@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -52,7 +52,7 @@ public:
 			 Mutex &_mutex) noexcept
 		:InputStream(_uri, _mutex) {}
 
-	virtual ~ProxyInputStream() noexcept;
+	~ProxyInputStream() noexcept override;
 
 	ProxyInputStream(const ProxyInputStream &) = delete;
 	ProxyInputStream &operator=(const ProxyInputStream &) = delete;

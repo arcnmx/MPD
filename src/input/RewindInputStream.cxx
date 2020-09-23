@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,7 +20,8 @@
 #include "RewindInputStream.hxx"
 #include "ProxyInputStream.hxx"
 
-#include <assert.h>
+#include <cassert>
+
 #include <string.h>
 
 class RewindInputStream final : public ProxyInputStream {
@@ -56,7 +57,7 @@ public:
 			ProxyInputStream::Update();
 	}
 
-	bool IsEOF() const noexcept override {
+	[[nodiscard]] bool IsEOF() const noexcept override {
 		return !ReadingFromBuffer() && ProxyInputStream::IsEOF();
 	}
 
@@ -69,7 +70,7 @@ private:
 	 * Are we currently reading from the buffer, and does the
 	 * buffer contain more data for the next read operation?
 	 */
-	bool ReadingFromBuffer() const noexcept {
+	[[nodiscard]] bool ReadingFromBuffer() const noexcept {
 		return tail > 0 && offset < input->GetOffset();
 	}
 };

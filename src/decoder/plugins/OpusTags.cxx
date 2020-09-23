@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -28,7 +28,7 @@
 #include "util/NumberParser.hxx"
 #include "util/StringView.hxx"
 
-#include <stdint.h>
+#include <cstdint>
 
 gcc_pure
 static TagType
@@ -61,7 +61,7 @@ ScanOneOpusTag(StringView name, StringView value,
 		const char *endptr;
 		const auto l = ParseInt64(value, &endptr, 10);
 		if (endptr > value.begin() && endptr == value.end())
-			rgi->track.gain = double(l) / 256.;
+			rgi->track.gain += float(l) / 256.0f;
 	} else if (rgi != nullptr &&
 		   name.EqualsIgnoreCase("R128_ALBUM_GAIN")) {
 		/* R128_ALBUM_GAIN is a Q7.8 fixed point number in
@@ -70,7 +70,7 @@ ScanOneOpusTag(StringView name, StringView value,
 		const char *endptr;
 		const auto l = ParseInt64(value, &endptr, 10);
 		if (endptr > value.begin() && endptr == value.end())
-			rgi->album.gain = double(l) / 256.;
+			rgi->album.gain += float(l) / 256.0f;
 	}
 
 	handler.OnPair(name, value);

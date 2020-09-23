@@ -34,7 +34,7 @@
 #include "util/ByteOrder.hxx"
 #include "util/Compiler.h"
 
-#include <stdint.h>
+#include <cstdint>
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -178,7 +178,7 @@ public:
 	/**
 	 * Is this an IPv4 address mapped inside struct sockaddr_in6?
 	 */
-#if defined(__linux__) && !GCC_OLDER_THAN(5,0)
+#if defined(__linux__)
 	constexpr
 #endif
 	bool IsV4Mapped() const noexcept {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,12 +22,14 @@
 
 #include "db/Visitor.hxx"
 
+#include <string_view>
+
 class Database;
 struct DatabaseSelection;
 
 void
-WalkMount(const char *base, const Database &db,
-	  const char *uri,
+WalkMount(std::string_view base, const Database &db,
+	  std::string_view uri,
 	  const DatabaseSelection &old_selection,
 	  const VisitDirectory &visit_directory, const VisitSong &visit_song,
 	  const VisitPlaylist &visit_playlist);

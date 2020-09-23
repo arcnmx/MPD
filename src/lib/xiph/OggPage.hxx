@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,9 +22,10 @@
 
 #include <ogg/ogg.h>
 
-#include <assert.h>
+#include <cassert>
+#include <cstdint>
+
 #include <string.h>
-#include <stdint.h>
 
 static size_t
 ReadPage(const ogg_page &page, void *_buffer, size_t size) noexcept

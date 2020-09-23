@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -95,7 +95,7 @@ public:
 
 	constexpr double ToDoubleS() const {
 		return double(count()) / 1000.;
-	};
+	}
 
 	constexpr bool IsZero() const {
 		return count() == 0;
@@ -199,7 +199,7 @@ public:
 
 	constexpr double ToDoubleS() const {
 		return double(count()) / 1000.;
-	};
+	}
 
 	constexpr bool IsZero() const {
 		return count() == 0;

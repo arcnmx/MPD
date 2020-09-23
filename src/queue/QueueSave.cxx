@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -112,7 +112,7 @@ queue_load_song(TextFile &file, const SongLoader &loader,
 
 	auto song = LoadQueueSong(file, line);
 
-	if (!playlist_check_translate_song(song, nullptr, loader))
+	if (!playlist_check_translate_song(song, {}, loader))
 		return;
 
 	queue.Append(std::move(song), priority);

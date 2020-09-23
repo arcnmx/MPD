@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,7 +22,7 @@
 #include "event/Call.hxx"
 #include "util/Manual.hxx"
 
-#include <assert.h>
+#include <cassert>
 
 static Manual<NfsManager> nfs_glue;
 static unsigned in_use;

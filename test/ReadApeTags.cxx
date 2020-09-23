@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,6 +21,7 @@
 #include "tag/ApeLoader.hxx"
 #include "thread/Mutex.hxx"
 #include "fs/Path.hxx"
+#include "fs/NarrowPath.hxx"
 #include "input/InputStream.hxx"
 #include "input/LocalOpen.hxx"
 #include "util/StringView.hxx"
@@ -34,7 +35,7 @@
 #endif
 
 static bool
-MyApeTagCallback(gcc_unused unsigned long flags,
+MyApeTagCallback([[maybe_unused]] unsigned long flags,
 		 const char *key, StringView value)
 {
 	if ((flags & (0x3 << 1)) == 0)
@@ -58,7 +59,7 @@ try {
 		return EXIT_FAILURE;
 	}
 
-	const Path path = Path::FromFS(argv[1]);
+	const FromNarrowPath path = argv[1];
 
 	Mutex mutex;
 

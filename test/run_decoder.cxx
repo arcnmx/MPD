@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -26,16 +26,17 @@
 #include "input/Init.hxx"
 #include "input/InputStream.hxx"
 #include "fs/Path.hxx"
-#include "AudioFormat.hxx"
+#include "fs/NarrowPath.hxx"
+#include "pcm/AudioFormat.hxx"
 #include "util/OptionDef.hxx"
 #include "util/OptionParser.hxx"
 #include "util/PrintException.hxx"
 #include "Log.hxx"
 #include "LogBackend.hxx"
 
+#include <cassert>
 #include <stdexcept>
 
-#include <assert.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -44,19 +45,23 @@ struct CommandLine {
 	const char *decoder = nullptr;
 	const char *uri = nullptr;
 
-	Path config_path = nullptr;
+	FromNarrowPath config_path;
 
 	bool verbose = false;
+
+	SongTime seek_where{};
 };
 
 enum Option {
 	OPTION_CONFIG,
 	OPTION_VERBOSE,
+	OPTION_SEEK,
 };
 
 static constexpr OptionDef option_defs[] = {
 	{"config", 0, true, "Load a MPD configuration file"},
 	{"verbose", 'v', false, "Verbose logging"},
+	{"seek", 0, true, "Seek to this position"},
 };
 
 static CommandLine
@@ -68,11 +73,15 @@ ParseCommandLine(int argc, char **argv)
 	while (auto o = option_parser.Next()) {
 		switch (Option(o.index)) {
 		case OPTION_CONFIG:
-			c.config_path = Path::FromFS(o.value);
+			c.config_path = o.value;
 			break;
 
 		case OPTION_VERBOSE:
 			c.verbose = true;
+			break;
+
+		case OPTION_SEEK:
+			c.seek_where = SongTime::FromS(strtod(o.value, nullptr));
 			break;
 		}
 	}
@@ -102,6 +111,85 @@ public:
 	}
 };
 
+class MyDecoderClient final : public DumpDecoderClient {
+	SongTime seek_where;
+
+	unsigned sample_rate;
+
+	bool seekable, seek_error = false;
+
+public:
+	explicit MyDecoderClient(SongTime _seek_where) noexcept
+		:seek_where(_seek_where) {}
+
+	void Finish() {
+		if (!IsInitialized())
+			throw "Unrecognized file";
+
+		if (seek_error)
+			throw "Seek error";
+
+		if (seek_where != SongTime{}) {
+			if (!seekable)
+				throw "Not seekable";
+
+			throw "Did not seek";
+		}
+	}
+
+	/* virtual methods from DecoderClient */
+	void Ready(AudioFormat audio_format,
+		   bool _seekable, SignedSongTime duration) noexcept override {
+		assert(!IsInitialized());
+
+		DumpDecoderClient::Ready(audio_format, _seekable, duration);
+		sample_rate = audio_format.sample_rate;
+		seekable = _seekable;
+	}
+
+	DecoderCommand GetCommand() noexcept override {
+		assert(IsInitialized());
+
+		if (seek_where != SongTime{}) {
+			if (!seekable)
+				return DecoderCommand::STOP;
+
+			return DecoderCommand::SEEK;
+		} else if (seek_error)
+			return DecoderCommand::STOP;
+		else
+			return DumpDecoderClient::GetCommand();
+	}
+
+	void CommandFinished() noexcept override {
+		assert(!seek_error);
+
+		if (seek_where != SongTime{})
+			seek_where = {};
+		else
+			DumpDecoderClient::CommandFinished();
+	}
+
+	SongTime GetSeekTime() noexcept override {
+		assert(seek_where != SongTime{});
+
+		return seek_where;
+	}
+
+	uint64_t GetSeekFrame() noexcept override {
+		assert(seek_where != SongTime{});
+
+		return GetSeekTime().ToScale<uint64_t>(sample_rate);
+	}
+
+	void SeekError() noexcept override {
+		assert(seek_where != SongTime{});
+
+		seek_error = true;
+		seek_where = {};
+	}
+};
+
 int main(int argc, char **argv)
 try {
 	const auto c = ParseCommandLine(argc, argv);
@@ -115,10 +203,15 @@ try {
 		return EXIT_FAILURE;
 	}
 
-	DumpDecoderClient client;
-	if (plugin->file_decode != nullptr) {
+	MyDecoderClient client(c.seek_where);
+	if (plugin->SupportsUri(c.uri)) {
 		try {
-			plugin->FileDecode(client, Path::FromFS(c.uri));
+			plugin->UriDecode(client, c.uri);
+		} catch (StopDecoder) {
+		}
+	} else if (plugin->file_decode != nullptr) {
+		try {
+			plugin->FileDecode(client, FromNarrowPath(c.uri));
 		} catch (StopDecoder) {
 		}
 	} else if (plugin->stream_decode != nullptr) {
@@ -132,10 +225,7 @@ try {
 		return EXIT_FAILURE;
 	}
 
-	if (!client.IsInitialized()) {
-		fprintf(stderr, "Decoding failed\n");
-		return EXIT_FAILURE;
-	}
+	client.Finish();
 
 	return EXIT_SUCCESS;
 } catch (...) {

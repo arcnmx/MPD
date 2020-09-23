@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,8 +18,9 @@
  */
 
 #include "OpusHead.hxx"
+#include "util/ByteOrder.hxx"
 
-#include <stdint.h>
+#include <cstdint>
 
 struct OpusHead {
 	char signature[8];
@@ -31,12 +32,16 @@ struct OpusHead {
 };
 
 bool
-ScanOpusHeader(const void *data, size_t size, unsigned &channels_r)
+ScanOpusHeader(const void *data, size_t size, unsigned &channels_r,
+	       signed &output_gain_r, unsigned &pre_skip_r)
 {
-	const OpusHead *h = (const OpusHead *)data;
+	const auto *h = (const OpusHead *)data;
 	if (size < 19 || (h->version & 0xf0) != 0)
 		return false;
 
+	output_gain_r = FromLE16S(h->output_gain);
+
 	channels_r = h->channels;
+	pre_skip_r = FromLE16(h->pre_skip);
 	return true;
 }

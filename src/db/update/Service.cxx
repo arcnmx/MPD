@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -36,7 +36,7 @@
 #include "event/Loop.hxx"
 #endif
 
-#include <assert.h>
+#include <cassert>
 
 UpdateService::UpdateService(const ConfigData &_config,
 			     EventLoop &_loop, SimpleDatabase &_db,
@@ -169,7 +169,7 @@ UpdateService::GenerateId() noexcept
 }
 
 unsigned
-UpdateService::Enqueue(const char *path, bool discard)
+UpdateService::Enqueue(std::string_view path, bool discard)
 {
 	assert(GetEventLoop().IsInside());
 
@@ -192,17 +192,12 @@ UpdateService::Enqueue(const char *path, bool discard)
 		if (db2 == nullptr)
 			throw std::runtime_error("Cannot update this type of database");
 
-		if (lr.uri == nullptr) {
+		if (lr.rest.data() == nullptr) {
 			storage2 = storage.GetMount(path);
 			path = "";
 		} else {
-			assert(lr.uri > path);
-			assert(lr.uri < path + strlen(path));
-			assert(lr.uri[-1] == '/');
-
-			const std::string mountpoint(path, lr.uri - 1);
-			storage2 = storage.GetMount(mountpoint.c_str());
-			path = lr.uri;
+			storage2 = storage.GetMount(lr.uri);
+			path = lr.rest;
 		}
 	} else {
 		/* use the "root" database/storage */

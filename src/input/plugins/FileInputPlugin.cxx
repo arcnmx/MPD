@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,8 +22,10 @@
 #include "fs/Path.hxx"
 #include "fs/FileInfo.hxx"
 #include "fs/io/FileReader.hxx"
-#include "system/FileDescriptor.hxx"
+#include "io/FileDescriptor.hxx"
 #include "util/RuntimeError.hxx"
+
+#include <cinttypes> // for PRIu64 (PRIoffset)
 
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -43,7 +45,7 @@ public:
 
 	/* virtual methods from InputStream */
 
-	bool IsEOF() const noexcept override {
+	[[nodiscard]] bool IsEOF() const noexcept override {
 		return GetOffset() >= GetSize();
 	}
 
@@ -96,6 +98,11 @@ FileInputStream::Read(std::unique_lock<Mutex> &,
 		const ScopeUnlock unlock(mutex);
 		nbytes = reader.Read(ptr, read_size);
 	}
+
+	if (nbytes == 0 && !IsEOF())
+		throw FormatRuntimeError("Unexpected end of file %s"
+					 " at %" PRIoffset " of %" PRIoffset,
+					 GetURI(), GetOffset(), GetSize());
 
 	offset += nbytes;
 	return nbytes;

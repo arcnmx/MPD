@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -34,10 +34,15 @@
 #include <boost/intrusive/set.hpp>
 #include <boost/intrusive/list.hpp>
 
-#include <chrono>
 #include <atomic>
+#include <cassert>
+#include <chrono>
 
-#include <assert.h>
+#include "io/uring/Features.h"
+#ifdef HAVE_URING
+#include <memory>
+namespace Uring { class Queue; class Manager; }
+#endif
 
 /**
  * An event loop that polls for events on file/socket descriptors.
@@ -83,6 +88,10 @@ class EventLoop final : SocketMonitor
 				       boost::intrusive::constant_time_size<false>> DeferredList;
 	DeferredList deferred;
 
+#ifdef HAVE_URING
+	std::unique_ptr<Uring::Manager> uring;
+#endif
+
 	std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
 
 	/**
@@ -108,6 +117,10 @@ class EventLoop final : SocketMonitor
 	 * Protected with #mutex.
 	 */
 	bool busy = true;
+
+#ifdef HAVE_URING
+	bool uring_initialized = false;
+#endif
 
 	PollGroup poll_group;
 	PollResult poll_result;
@@ -136,6 +149,11 @@ public:
 		return now;
 	}
 
+#ifdef HAVE_URING
+	gcc_pure
+	Uring::Queue *GetUring() noexcept;
+#endif
+
 	/**
 	 * Stop execution of this #EventLoop at the next chance.  This
 	 * method is thread-safe and non-blocking: after returning, it
@@ -144,13 +162,13 @@ public:
 	void Break() noexcept;
 
 	bool AddFD(int _fd, unsigned flags, SocketMonitor &m) noexcept {
-		assert(IsInside());
+		assert(!IsAlive() || IsInside());
 
 		return poll_group.Add(_fd, flags, &m);
 	}
 
 	bool ModifyFD(int _fd, unsigned flags, SocketMonitor &m) noexcept {
-		assert(IsInside());
+		assert(!IsAlive() || IsInside());
 
 		return poll_group.Modify(_fd, flags, &m);
 	}

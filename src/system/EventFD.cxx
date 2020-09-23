@@ -31,7 +31,8 @@
 #include "system/Error.hxx"
 #include "util/Compiler.h"
 
-#include <assert.h>
+#include <cassert>
+
 #include <sys/eventfd.h>
 
 EventFD::EventFD()
@@ -55,6 +56,6 @@ EventFD::Write() noexcept
 	assert(fd.IsDefined());
 
 	static constexpr eventfd_t value = 1;
-	gcc_unused ssize_t nbytes =
+	[[maybe_unused]] ssize_t nbytes =
 		fd.Write(&value, sizeof(value));
 }

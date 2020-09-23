@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,14 +23,15 @@
 #include "decoder/DecoderList.hxx"
 #include "decoder/DecoderPlugin.hxx"
 #include "fs/Path.hxx"
+#include "fs/NarrowPath.hxx"
 #include "fs/io/StdioOutputStream.hxx"
 #include "fs/io/BufferedOutputStream.hxx"
 #include "util/PrintException.hxx"
 #include "util/UriExtract.hxx"
 
+#include <cassert>
 #include <stdexcept>
 
-#include <assert.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -63,7 +64,7 @@ try {
 		return EXIT_FAILURE;
 	}
 
-	const Path path = Path::FromFS(argv[1]);
+	const FromNarrowPath path = argv[1];
 
 	const ScopeDecoderPluginsInit decoder_plugins_init({});
 

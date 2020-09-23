@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,8 +20,8 @@
 #ifndef MPD_FS_LIMITS_HXX
 #define MPD_FS_LIMITS_HXX
 
-#include <stddef.h>
-#include <limits.h>
+#include <climits>
+#include <cstddef>
 
 #if defined(_WIN32)
 static constexpr size_t MPD_PATH_MAX = 260;

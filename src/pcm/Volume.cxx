@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -27,8 +27,9 @@
 
 #include "Dither.cxx" // including the .cxx file to get inlined templates
 
-#include <assert.h>
-#include <stdint.h>
+#include <cassert>
+#include <cstdint>
+
 #include <string.h>
 
 #if GCC_OLDER_THAN(8,0)
@@ -90,8 +91,8 @@ pcm_volume_sample(PcmDither &dither,
 template<SampleFormat F, class Traits=SampleTraits<F>>
 static void
 pcm_volume_change(PcmDither &dither,
-		  typename Traits::pointer_type dest,
-		  typename Traits::const_pointer_type src,
+		  typename Traits::pointer dest,
+		  typename Traits::const_pointer src,
 		  size_t n,
 		  int volume) noexcept
 {

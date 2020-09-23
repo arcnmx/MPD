@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,10 +21,12 @@
 #include "ls.hxx"
 #include "input/Registry.hxx"
 #include "input/InputPlugin.hxx"
+#include "decoder/DecoderList.hxx"
+#include "decoder/DecoderPlugin.hxx"
 #include "client/Response.hxx"
 #include "util/UriExtract.hxx"
 
-#include <assert.h>
+#include <cassert>
 
 #include <string>
 
@@ -39,7 +41,12 @@ void print_supported_uri_schemes_to_fp(FILE *fp)
 			protocols.emplace(uri);
 		});
 
-	for (auto protocol : protocols) {
+	decoder_plugins_for_each([&protocols](const auto &plugin){
+		if (plugin.protocols != nullptr)
+			protocols.merge(plugin.protocols());
+	});
+
+	for (const auto& protocol : protocols) {
 		fprintf(fp, " %s", protocol.c_str());
 	}
 	fprintf(fp,"\n");
@@ -54,7 +61,12 @@ print_supported_uri_schemes(Response &r)
 			protocols.emplace(uri);
 		});
 
-	for (auto protocol : protocols) {
+	decoder_plugins_for_each_enabled([&protocols](const auto &plugin){
+		if (plugin.protocols != nullptr)
+			protocols.merge(plugin.protocols());
+	});
+
+	for (const auto& protocol : protocols) {
 		r.Format("handler: %s\n", protocol.c_str());
 	}
 }
@@ -68,5 +80,7 @@ uri_supported_scheme(const char *uri) noexcept
 		if (plugin->SupportsUri(uri))
 			return true;
 
-	return false;
+	return decoder_plugins_try([uri](const auto &plugin){
+		return plugin.SupportsUri(uri);
+	});
 }

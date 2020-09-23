@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -54,9 +54,9 @@ OSXMixer::SetVolume(unsigned new_volume)
 }
 
 static Mixer *
-osx_mixer_init(gcc_unused EventLoop &event_loop, AudioOutput &ao,
+osx_mixer_init([[maybe_unused]] EventLoop &event_loop, AudioOutput &ao,
 		MixerListener &listener,
-		gcc_unused const ConfigBlock &block)
+		[[maybe_unused]] const ConfigBlock &block)
 {
 	OSXOutput &osxo = (OSXOutput &)ao;
 	return new OSXMixer(osxo, listener);

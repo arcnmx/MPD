@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -49,7 +49,7 @@ AvahiRegisterService(AvahiClient *c);
 static void
 AvahiGroupCallback(AvahiEntryGroup *g,
 		   AvahiEntryGroupState state,
-		   gcc_unused void *userdata)
+		   [[maybe_unused]] void *userdata)
 {
 	assert(g != nullptr);
 
@@ -59,9 +59,9 @@ AvahiGroupCallback(AvahiEntryGroup *g,
 	switch (state) {
 	case AVAHI_ENTRY_GROUP_ESTABLISHED:
 		/* The entry group has been established successfully */
-		FormatDefault(avahi_domain,
-			      "Service '%s' successfully established.",
-			      avahi_name);
+		FormatNotice(avahi_domain,
+			     "Service '%s' successfully established.",
+			     avahi_name);
 		break;
 
 	case AVAHI_ENTRY_GROUP_COLLISION:
@@ -72,9 +72,9 @@ AvahiGroupCallback(AvahiEntryGroup *g,
 			avahi_name = n;
 		}
 
-		FormatDefault(avahi_domain,
-			      "Service name collision, renaming service to '%s'",
-			      avahi_name);
+		FormatNotice(avahi_domain,
+			     "Service name collision, renaming service to '%s'",
+			     avahi_name);
 
 		/* And recreate the services */
 		AvahiRegisterService(avahi_entry_group_get_client(g));
@@ -149,7 +149,7 @@ AvahiRegisterService(AvahiClient *c)
 /* Callback when avahi changes state */
 static void
 MyAvahiClientCallback(AvahiClient *c, AvahiClientState state,
-		      gcc_unused void *userdata)
+		      [[maybe_unused]] void *userdata)
 {
 	assert(c != nullptr);
 
@@ -171,8 +171,8 @@ MyAvahiClientCallback(AvahiClient *c, AvahiClientState state,
 	case AVAHI_CLIENT_FAILURE:
 		reason = avahi_client_errno(c);
 		if (reason == AVAHI_ERR_DISCONNECTED) {
-			LogDefault(avahi_domain,
-				   "Client Disconnected, will reconnect shortly");
+			LogNotice(avahi_domain,
+				  "Client Disconnected, will reconnect shortly");
 			if (avahi_group != nullptr) {
 				avahi_entry_group_free(avahi_group);
 				avahi_group = nullptr;

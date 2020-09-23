@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -36,12 +36,6 @@ struct UPnPService {
 	// e.g. urn:schemas-upnp-org:service:ConnectionManager:1
 	std::string serviceType;
 	std::string controlURL; // e.g.: /upnp/control/cm
-
-	void clear()
-	{
-		serviceType.clear();
-		controlURL.clear();
-	}
 };
 
 /**

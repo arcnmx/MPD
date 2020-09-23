@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -29,6 +29,9 @@
 #else
 #include <OpenAL/al.h>
 #include <OpenAL/alc.h>
+/* on macOS, OpenAL is deprecated, but since the user asked to enable
+   this plugin, let's ignore the compiler warnings */
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
 class OpenALOutput final : AudioOutput {
@@ -44,7 +47,7 @@ class OpenALOutput final : AudioOutput {
 	ALenum format;
 	ALuint frequency;
 
-	OpenALOutput(const ConfigBlock &block);
+	explicit OpenALOutput(const ConfigBlock &block);
 
 public:
 	static AudioOutput *Create(EventLoop &,
@@ -56,7 +59,7 @@ private:
 	void Open(AudioFormat &audio_format) override;
 	void Close() noexcept override;
 
-	gcc_pure
+	[[nodiscard]] gcc_pure
 	std::chrono::steady_clock::duration Delay() const noexcept override {
 		return filled < NUM_BUFFERS || HasProcessed()
 			? std::chrono::steady_clock::duration::zero()
@@ -70,20 +73,19 @@ private:
 
 	void Cancel() noexcept override;
 
-private:
-	gcc_pure
+	[[nodiscard]] gcc_pure
 	ALint GetSourceI(ALenum param) const noexcept {
 		ALint value;
 		alGetSourcei(source, param, &value);
 		return value;
 	}
 
-	gcc_pure
+	[[nodiscard]] gcc_pure
 	bool HasProcessed() const noexcept {
 		return GetSourceI(AL_BUFFERS_PROCESSED) > 0;
 	}
 
-	gcc_pure
+	[[nodiscard]] gcc_pure
 	bool IsPlaying() const noexcept {
 		return GetSourceI(AL_SOURCE_STATE) == AL_PLAYING;
 	}

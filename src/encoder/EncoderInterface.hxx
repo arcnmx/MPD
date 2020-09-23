@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,8 +23,8 @@
 #include "EncoderPlugin.hxx"
 #include "util/Compiler.h"
 
-#include <assert.h>
-#include <stddef.h>
+#include <cassert>
+#include <cstddef>
 
 struct AudioFormat;
 struct Tag;
@@ -84,7 +84,7 @@ public:
 	 *
 	 * @param tag the tag object
 	 */
-	virtual void SendTag(gcc_unused const Tag &tag) {
+	virtual void SendTag([[maybe_unused]] const Tag &tag) {
 	}
 
 	/**

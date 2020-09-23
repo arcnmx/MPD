@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,13 +23,13 @@
 #include "util/BindMethod.hxx"
 #include "util/Compiler.h"
 
+#include <cassert>
+
 #ifdef _WIN32
 #include <windows.h>
 #else
 #include <pthread.h>
 #endif
-
-#include <assert.h>
 
 class Thread {
 	typedef BoundMethod<void() noexcept> Function;

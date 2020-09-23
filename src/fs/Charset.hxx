@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -44,17 +44,15 @@ DeinitFSCharset() noexcept;
  *
  * Throws std::runtime_error on error.
  */
-gcc_nonnull_all
 PathTraitsUTF8::string
-PathToUTF8(PathTraitsFS::const_pointer_type path_fs);
+PathToUTF8(PathTraitsFS::string_view path_fs);
 
 /**
  * Convert the path from UTF-8.
  *
  * Throws std::runtime_error on error.
  */
-gcc_nonnull_all
 PathTraitsFS::string
-PathFromUTF8(PathTraitsUTF8::const_pointer_type path_utf8);
+PathFromUTF8(PathTraitsUTF8::string_view path_utf8);
 
 #endif

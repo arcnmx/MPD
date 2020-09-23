@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,7 +21,7 @@
 #define MPD_PLAYER_CONTROL_HXX
 
 #include "output/Client.hxx"
-#include "AudioFormat.hxx"
+#include "pcm/AudioFormat.hxx"
 #include "thread/Mutex.hxx"
 #include "thread/Cond.hxx"
 #include "thread/Thread.hxx"
@@ -31,10 +31,9 @@
 #include "ReplayGainMode.hxx"
 #include "MusicChunkPtr.hxx"
 
+#include <cstdint>
 #include <exception>
 #include <memory>
-
-#include <stdint.h>
 
 struct Tag;
 class PlayerListener;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,53 +20,16 @@
 #ifndef MPD_UPNP_COMPAT_HXX
 #define MPD_UPNP_COMPAT_HXX
 
-#include <upnp.h>
-
-#if UPNP_VERSION < 10800
-/* emulate the libupnp 1.8 API with older versions */
-
-using UpnpDiscovery = Upnp_Discovery;
-
+#ifdef __clang__
+/* libupnp versions until 1.10.1 redefine "bool" and "true" */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wkeyword-macro"
 #endif
 
-#if UPNP_VERSION < 10624
-#include "util/Compiler.h"
+#include <upnp.h>
 
-gcc_pure
-static inline int
-UpnpDiscovery_get_Expires(const UpnpDiscovery *disco) noexcept
-{
-  return disco->Expires;
-}
-
-gcc_pure
-static inline const char *
-UpnpDiscovery_get_DeviceID_cstr(const UpnpDiscovery *disco) noexcept
-{
-  return disco->DeviceId;
-}
-
-gcc_pure
-static inline const char *
-UpnpDiscovery_get_DeviceType_cstr(const UpnpDiscovery *disco) noexcept
-{
-  return disco->DeviceType;
-}
-
-gcc_pure
-static inline const char *
-UpnpDiscovery_get_ServiceType_cstr(const UpnpDiscovery *disco) noexcept
-{
-  return disco->ServiceType;
-}
-
-gcc_pure
-static inline const char *
-UpnpDiscovery_get_Location_cstr(const UpnpDiscovery *disco) noexcept
-{
-  return disco->Location;
-}
-
+#ifdef __clang__
+#pragma GCC diagnostic pop
 #endif
 
 #endif

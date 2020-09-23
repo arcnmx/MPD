@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -75,7 +75,7 @@ public:
 	 * directory (UTF-8)
 	 * @return a pointer that must be released with ReturnSong()
 	 */
-	virtual const LightSong *GetSong(const char *uri_utf8) const = 0;
+	virtual const LightSong *GetSong(std::string_view uri_utf8) const = 0;
 
 	/**
 	 * Mark the song object as "unused".  Call this on objects
@@ -126,8 +126,8 @@ public:
 	 *
 	 * @return the job id or 0 if not implemented
 	 */
-	virtual unsigned Update(gcc_unused const char *uri_utf8,
-				gcc_unused bool discard) {
+	virtual unsigned Update([[maybe_unused]] const char *uri_utf8,
+				[[maybe_unused]] bool discard) {
 		/* not implemented: return 0 */
 		return 0;
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -45,6 +45,42 @@
 #include <memory>
 
 static constexpr Domain decoder_thread_domain("decoder_thread");
+
+/**
+ * Decode a URI with the given decoder plugin.
+ *
+ * Caller holds DecoderControl::mutex.
+ */
+static bool
+DecoderUriDecode(const DecoderPlugin &plugin,
+		 DecoderBridge &bridge, const char *uri)
+{
+	assert(plugin.uri_decode != nullptr);
+	assert(bridge.stream_tag == nullptr);
+	assert(bridge.decoder_tag == nullptr);
+	assert(uri != nullptr);
+	assert(bridge.dc.state == DecoderState::START);
+
+	FormatDebug(decoder_thread_domain, "probing plugin %s", plugin.name);
+
+	if (bridge.dc.command == DecoderCommand::STOP)
+		throw StopDecoder();
+
+	{
+		const ScopeUnlock unlock(bridge.dc.mutex);
+
+		FormatThreadName("decoder:%s", plugin.name);
+
+		plugin.UriDecode(bridge, uri);
+
+		SetThreadName("decoder");
+	}
+
+	assert(bridge.dc.state == DecoderState::START ||
+	       bridge.dc.state == DecoderState::DECODE);
+
+	return bridge.dc.state != DecoderState::START;
+}
 
 /**
  * Decode a stream with the given decoder plugin.
@@ -183,11 +219,9 @@ decoder_run_stream_locked(DecoderBridge &bridge, InputStream &is,
 	UriSuffixBuffer suffix_buffer;
 	const char *const suffix = uri_get_suffix(uri, suffix_buffer);
 
-	using namespace std::placeholders;
-	const auto f = std::bind(decoder_run_stream_plugin,
-				 std::ref(bridge), std::ref(is), std::ref(lock),
-				 suffix,
-				 _1, std::ref(tried_r));
+	const auto f = [&,suffix](const auto &plugin)
+		{ return decoder_run_stream_plugin(bridge, is, lock, suffix, plugin, tried_r); };
+
 	return decoder_plugins_try(f);
 }
 
@@ -239,6 +273,24 @@ MaybeLoadReplayGain(DecoderBridge &bridge, InputStream &is)
 }
 
 /**
+ * Try decoding a URI.
+ *
+ * DecoderControl::mutex is not be locked by caller.
+ */
+static bool
+TryUriDecode(DecoderBridge &bridge, const char *uri)
+{
+	return decoder_plugins_try([&bridge, uri](const DecoderPlugin &plugin){
+		if (!plugin.SupportsUri(uri))
+			return false;
+
+		std::unique_lock<Mutex> lock(bridge.dc.mutex);
+		bridge.Reset();
+		return DecoderUriDecode(plugin, bridge, uri);
+	});
+}
+
+/**
  * Try decoding a stream.
  *
  * DecoderControl::mutex is not locked by caller.
@@ -246,6 +298,9 @@ MaybeLoadReplayGain(DecoderBridge &bridge, InputStream &is)
 static bool
 decoder_run_stream(DecoderBridge &bridge, const char *uri)
 {
+	if (TryUriDecode(bridge, uri))
+		return true;
+
 	DecoderControl &dc = bridge.dc;
 
 	auto input_stream = bridge.OpenUri(uri);
@@ -424,6 +479,7 @@ decoder_run_song(DecoderControl &dc,
 		dc.start_time = dc.seek_time;
 
 	DecoderBridge bridge(dc, dc.start_time.IsPositive(),
+			     dc.initial_seek_essential,
 			     /* pass the song tag only if it's
 				authoritative, i.e. if it's a local
 				file - tags on "stream" songs are just

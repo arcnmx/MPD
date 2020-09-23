@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,12 +22,12 @@
 #include "Clamp.hxx"
 #include "Traits.hxx"
 #include "util/Clamp.hxx"
+#include "util/Math.hxx"
 
 #include "Dither.cxx" // including the .cxx file to get inlined templates
 
+#include <cassert>
 #include <cmath>
-
-#include <assert.h>
 
 template<SampleFormat F, class Traits=SampleTraits<F>>
 static typename Traits::value_type
@@ -46,8 +46,8 @@ PcmAddVolume(PcmDither &dither,
 template<SampleFormat F, class Traits=SampleTraits<F>>
 static void
 PcmAddVolume(PcmDither &dither,
-	     typename Traits::pointer_type a,
-	     typename Traits::const_pointer_type b,
+	     typename Traits::pointer a,
+	     typename Traits::const_pointer b,
 	     size_t n, int volume1, int volume2) noexcept
 {
 	for (size_t i = 0; i != n; ++i)
@@ -65,8 +65,8 @@ PcmAddVolumeVoid(PcmDither &dither,
 	assert(size % sample_size == 0);
 
 	PcmAddVolume<F, Traits>(dither,
-				typename Traits::pointer_type(a),
-				typename Traits::const_pointer_type(b),
+				typename Traits::pointer(a),
+				typename Traits::const_pointer(b),
 				size / sample_size,
 				volume1, volume2);
 }
@@ -143,8 +143,8 @@ PcmAdd(typename Traits::value_type _a, typename Traits::value_type _b) noexcept
 
 template<SampleFormat F, class Traits=SampleTraits<F>>
 static void
-PcmAdd(typename Traits::pointer_type a,
-       typename Traits::const_pointer_type b,
+PcmAdd(typename Traits::pointer a,
+       typename Traits::const_pointer b,
        size_t n) noexcept
 {
 	for (size_t i = 0; i != n; ++i)
@@ -158,8 +158,8 @@ PcmAddVoid(void *a, const void *b, size_t size) noexcept
 	constexpr size_t sample_size = Traits::SAMPLE_SIZE;
 	assert(size % sample_size == 0);
 
-	PcmAdd<F, Traits>(typename Traits::pointer_type(a),
-			  typename Traits::const_pointer_type(b),
+	PcmAdd<F, Traits>(typename Traits::pointer(a),
+			  typename Traits::const_pointer(b),
 			  size / sample_size);
 }
 
@@ -222,10 +222,10 @@ pcm_mix(PcmDither &dither, void *buffer1, const void *buffer2, size_t size,
 	if (portion1 < 0)
 		return pcm_add(buffer1, buffer2, size, format);
 
-	s = sin(M_PI_2 * portion1);
+	s = std::sin((float)M_PI_2 * portion1);
 	s *= s;
 
-	int vol1 = std::lround(s * PCM_VOLUME_1S);
+	int vol1 = lround(s * PCM_VOLUME_1S);
 	vol1 = Clamp<int>(vol1, 0, PCM_VOLUME_1S);
 
 	return pcm_add_vol(dither, buffer1, buffer2, size,

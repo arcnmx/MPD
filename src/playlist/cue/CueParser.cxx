@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,8 +23,9 @@
 #include "util/StringStrip.hxx"
 #include "util/CharUtil.hxx"
 
-#include <assert.h>
-#include <string.h>
+#include <cassert>
+#include <cstring>
+
 #include <stdlib.h>
 
 static const char *
@@ -48,7 +49,7 @@ cue_next_quoted(char *p, char **pp)
 	assert(p >= *pp);
 	assert(p[-1] == '"');
 
-	char *end = strchr(p, '"');
+	char *end = std::strchr(p, '"');
 	if (end == nullptr) {
 		/* syntax error - ignore it silently */
 		*pp = p + strlen(p);

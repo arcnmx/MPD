@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -25,7 +25,7 @@
 #ifndef PCM_PACK_HXX
 #define PCM_PACK_HXX
 
-#include <stdint.h>
+#include <cstdint>
 
 /**
  * Converts padded 24 bit samples (4 bytes per sample) to packed 24

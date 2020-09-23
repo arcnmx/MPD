@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -118,7 +118,7 @@ handle_outputset(Client &client, Request request, Response &response)
 }
 
 CommandResult
-handle_devices(Client &client, gcc_unused Request args, Response &r)
+handle_devices(Client &client, [[maybe_unused]] Request args, Response &r)
 {
 	assert(args.empty());
 

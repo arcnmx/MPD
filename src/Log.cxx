@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,15 +21,16 @@
 #include "util/Domain.hxx"
 #include "util/Exception.hxx"
 
+#include <cerrno>
+
 #include <stdio.h>
 #include <string.h>
-#include <errno.h>
 
 static constexpr Domain exception_domain("exception");
 
 void
 LogFormatV(LogLevel level, const Domain &domain,
-	   const char *fmt, va_list ap) noexcept
+	   const char *fmt, std::va_list ap) noexcept
 {
 	char msg[1024];
 	vsnprintf(msg, sizeof(msg), fmt, ap);
@@ -39,7 +40,7 @@ LogFormatV(LogLevel level, const Domain &domain,
 void
 LogFormat(LogLevel level, const Domain &domain, const char *fmt, ...) noexcept
 {
-	va_list ap;
+	std::va_list ap;
 	va_start(ap, fmt);
 	LogFormatV(level, domain, fmt, ap);
 	va_end(ap);
@@ -48,7 +49,7 @@ LogFormat(LogLevel level, const Domain &domain, const char *fmt, ...) noexcept
 void
 FormatDebug(const Domain &domain, const char *fmt, ...) noexcept
 {
-	va_list ap;
+	std::va_list ap;
 	va_start(ap, fmt);
 	LogFormatV(LogLevel::DEBUG, domain, fmt, ap);
 	va_end(ap);
@@ -57,25 +58,25 @@ FormatDebug(const Domain &domain, const char *fmt, ...) noexcept
 void
 FormatInfo(const Domain &domain, const char *fmt, ...) noexcept
 {
-	va_list ap;
+	std::va_list ap;
 	va_start(ap, fmt);
 	LogFormatV(LogLevel::INFO, domain, fmt, ap);
 	va_end(ap);
 }
 
 void
-FormatDefault(const Domain &domain, const char *fmt, ...) noexcept
+FormatNotice(const Domain &domain, const char *fmt, ...) noexcept
 {
-	va_list ap;
+	std::va_list ap;
 	va_start(ap, fmt);
-	LogFormatV(LogLevel::DEFAULT, domain, fmt, ap);
+	LogFormatV(LogLevel::NOTICE, domain, fmt, ap);
 	va_end(ap);
 }
 
 void
 FormatWarning(const Domain &domain, const char *fmt, ...) noexcept
 {
-	va_list ap;
+	std::va_list ap;
 	va_start(ap, fmt);
 	LogFormatV(LogLevel::WARNING, domain, fmt, ap);
 	va_end(ap);
@@ -84,7 +85,7 @@ FormatWarning(const Domain &domain, const char *fmt, ...) noexcept
 void
 FormatError(const Domain &domain, const char *fmt, ...) noexcept
 {
-	va_list ap;
+	std::va_list ap;
 	va_start(ap, fmt);
 	LogFormatV(LogLevel::ERROR, domain, fmt, ap);
 	va_end(ap);
@@ -106,7 +107,7 @@ void
 LogFormat(LogLevel level, const std::exception &e, const char *fmt, ...) noexcept
 {
 	char msg[1024];
-	va_list ap;
+	std::va_list ap;
 	va_start(ap, fmt);
 	vsnprintf(msg, sizeof(msg), fmt, ap);
 	va_end(ap);
@@ -131,7 +132,7 @@ void
 LogFormat(LogLevel level, const std::exception_ptr &ep, const char *fmt, ...) noexcept
 {
 	char msg[1024];
-	va_list ap;
+	std::va_list ap;
 	va_start(ap, fmt);
 	vsnprintf(msg, sizeof(msg), fmt, ap);
 	va_end(ap);
@@ -152,7 +153,7 @@ LogErrno(const Domain &domain, const char *msg) noexcept
 }
 
 static void
-FormatErrnoV(const Domain &domain, int e, const char *fmt, va_list ap) noexcept
+FormatErrnoV(const Domain &domain, int e, const char *fmt, std::va_list ap) noexcept
 {
 	char msg[1024];
 	vsnprintf(msg, sizeof(msg), fmt, ap);
@@ -163,7 +164,7 @@ FormatErrnoV(const Domain &domain, int e, const char *fmt, va_list ap) noexcept
 void
 FormatErrno(const Domain &domain, int e, const char *fmt, ...) noexcept
 {
-	va_list ap;
+	std::va_list ap;
 	va_start(ap, fmt);
 	FormatErrnoV(domain, e, fmt, ap);
 	va_end(ap);
@@ -174,7 +175,7 @@ FormatErrno(const Domain &domain, const char *fmt, ...) noexcept
 {
 	const int e = errno;
 
-	va_list ap;
+	std::va_list ap;
 	va_start(ap, fmt);
 	FormatErrnoV(domain, e, fmt, ap);
 	va_end(ap);

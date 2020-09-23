@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -53,7 +53,7 @@ static void flacPrintErroredState(FLAC__StreamDecoderState state)
 	LogError(flac_domain, FLAC__StreamDecoderStateString[state]);
 }
 
-static void flacMetadata(gcc_unused const FLAC__StreamDecoder * dec,
+static void flacMetadata([[maybe_unused]] const FLAC__StreamDecoder * dec,
 			 const FLAC__StreamMetadata * block, void *vdata)
 {
 	auto &fd = *(FlacDecoder *)vdata;
@@ -69,7 +69,7 @@ flac_write_cb(const FLAC__StreamDecoder *dec, const FLAC__Frame *frame,
 }
 
 static bool
-flac_scan_file(Path path_fs, TagHandler &handler) noexcept
+flac_scan_file(Path path_fs, TagHandler &handler)
 {
 	FlacMetadataChain chain;
 	if (!chain.Read(NarrowPath(path_fs))) {
@@ -84,7 +84,7 @@ flac_scan_file(Path path_fs, TagHandler &handler) noexcept
 }
 
 static bool
-flac_scan_stream(InputStream &is, TagHandler &handler) noexcept
+flac_scan_stream(InputStream &is, TagHandler &handler)
 {
 	FlacMetadataChain chain;
 	if (!chain.Read(is)) {
@@ -102,7 +102,7 @@ flac_scan_stream(InputStream &is, TagHandler &handler) noexcept
  * Some glue code around FLAC__stream_decoder_new().
  */
 static FlacStreamDecoder
-flac_decoder_new(void)
+flac_decoder_new()
 {
 	FlacStreamDecoder sd;
 	if(!FLAC__stream_decoder_set_metadata_respond(sd.get(), FLAC__METADATA_TYPE_VORBIS_COMMENT))
@@ -307,13 +307,13 @@ flac_decode(DecoderClient &client, InputStream &input_stream)
 }
 
 static bool
-oggflac_init(gcc_unused const ConfigBlock &block)
+oggflac_init([[maybe_unused]] const ConfigBlock &block)
 {
 	return !!FLAC_API_SUPPORTS_OGG_FLAC;
 }
 
 static bool
-oggflac_scan_file(Path path_fs, TagHandler &handler) noexcept
+oggflac_scan_file(Path path_fs, TagHandler &handler)
 {
 	FlacMetadataChain chain;
 	if (!chain.ReadOgg(NarrowPath(path_fs))) {
@@ -328,7 +328,7 @@ oggflac_scan_file(Path path_fs, TagHandler &handler) noexcept
 }
 
 static bool
-oggflac_scan_stream(InputStream &is, TagHandler &handler) noexcept
+oggflac_scan_stream(InputStream &is, TagHandler &handler)
 {
 	FlacMetadataChain chain;
 	if (!chain.ReadOgg(is)) {

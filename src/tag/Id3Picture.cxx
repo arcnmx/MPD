@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,9 +23,8 @@
 #include "util/ConstBuffer.hxx"
 #include "util/StringView.hxx"
 
+#include <cstdint>
 #include <string>
-
-#include <stdint.h>
 
 static StringView
 ReadString(ConstBuffer<uint8_t> &src) noexcept

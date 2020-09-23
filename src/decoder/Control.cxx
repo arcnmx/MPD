@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,9 +21,8 @@
 #include "MusicPipe.hxx"
 #include "song/DetachedSong.hxx"
 
+#include <cassert>
 #include <stdexcept>
-
-#include <assert.h>
 
 DecoderControl::DecoderControl(Mutex &_mutex, Cond &_client_cond,
 			       InputCacheManager *_input_cache,
@@ -81,6 +80,7 @@ void
 DecoderControl::Start(std::unique_lock<Mutex> &lock,
 		      std::unique_ptr<DetachedSong> _song,
 		      SongTime _start_time, SongTime _end_time,
+		      bool _initial_seek_essential,
 		      MusicBuffer &_buffer,
 		      std::shared_ptr<MusicPipe> _pipe) noexcept
 {
@@ -90,6 +90,7 @@ DecoderControl::Start(std::unique_lock<Mutex> &lock,
 	song = std::move(_song);
 	start_time = _start_time;
 	end_time = _end_time;
+	initial_seek_essential = _initial_seek_essential;
 	buffer = &_buffer;
 	pipe = std::move(_pipe);
 

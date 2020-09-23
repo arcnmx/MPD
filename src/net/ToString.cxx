@@ -34,6 +34,8 @@
 #include "IPv4Address.hxx"
 
 #include <algorithm>
+#include <cassert>
+#include <cstring>
 
 #ifdef _WIN32
 #include <ws2tcpip.h>
@@ -48,15 +50,12 @@
 #include <sys/un.h>
 #endif
 
-#include <assert.h>
-#include <string.h>
-
 #ifdef HAVE_UN
 
 static std::string
 LocalAddressToString(const struct sockaddr_un &s_un, size_t size) noexcept
 {
-	const size_t prefix_size = (size_t)
+	const auto prefix_size = (size_t)
 		((struct sockaddr_un *)nullptr)->sun_path;
 	assert(size >= prefix_size);
 
@@ -104,7 +103,7 @@ ToString(SocketAddress address) noexcept
 		return "unknown";
 
 #ifdef HAVE_IPV6
-	if (strchr(host, ':') != nullptr) {
+	if (std::strchr(host, ':') != nullptr) {
 		std::string result("[");
 		result.append(host);
 		result.append("]:");

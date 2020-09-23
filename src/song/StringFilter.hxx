@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -55,7 +55,7 @@ public:
 	StringFilter(V &&_value, bool _fold_case, bool _substring, bool _negated)
 		:value(std::forward<V>(_value)),
 		 fold_case(_fold_case
-			   ? IcuCompare(value.c_str())
+			   ? IcuCompare(value)
 			   : IcuCompare()),
 		 substring(_substring), negated(_negated) {}
 

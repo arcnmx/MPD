@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,14 +21,12 @@
 #include "db/DatabaseLock.hxx"
 
 #include <algorithm>
-
-#include <assert.h>
+#include <cassert>
 
 PlaylistVector::iterator
-PlaylistVector::find(const char *name) noexcept
+PlaylistVector::find(std::string_view name) noexcept
 {
 	assert(holding_db_lock());
-	assert(name != nullptr);
 
 	return std::find_if(begin(), end(),
 			    PlaylistInfo::CompareName(name));
@@ -52,7 +50,7 @@ PlaylistVector::UpdateOrInsert(PlaylistInfo &&pi) noexcept
 }
 
 bool
-PlaylistVector::erase(const char *name) noexcept
+PlaylistVector::erase(std::string_view name) noexcept
 {
 	assert(holding_db_lock());
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -19,14 +19,15 @@
 
 #include "mixer/MixerInternal.hxx"
 #include "config/Block.hxx"
-#include "system/FileDescriptor.hxx"
+#include "io/FileDescriptor.hxx"
 #include "system/Error.hxx"
 #include "util/ASCII.hxx"
 #include "util/Domain.hxx"
 #include "util/RuntimeError.hxx"
 #include "Log.hxx"
 
-#include <assert.h>
+#include <cassert>
+
 #include <string.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
@@ -96,8 +97,8 @@ OssMixer::Configure(const ConfigBlock &block)
 }
 
 static Mixer *
-oss_mixer_init(gcc_unused EventLoop &event_loop,
-	       gcc_unused AudioOutput &ao,
+oss_mixer_init([[maybe_unused]] EventLoop &event_loop,
+	       [[maybe_unused]] AudioOutput &ao,
 	       MixerListener &listener,
 	       const ConfigBlock &block)
 {

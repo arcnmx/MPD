@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -26,6 +26,7 @@
 #include "event/Call.hxx"
 #include "util/ASCII.hxx"
 #include "util/Domain.hxx"
+#include "util/Math.hxx"
 #include "util/RuntimeError.hxx"
 #include "Log.hxx"
 
@@ -34,8 +35,6 @@ extern "C" {
 }
 
 #include <alsa/asoundlib.h>
-
-#include <math.h>
 
 #define VOLUME_MIXER_ALSA_DEFAULT		"default"
 #define VOLUME_MIXER_ALSA_CONTROL_DEFAULT	"PCM"
@@ -86,7 +85,7 @@ public:
 		:Mixer(alsa_mixer_plugin, _listener),
 		 event_loop(_event_loop) {}
 
-	virtual ~AlsaMixer();
+	~AlsaMixer() override;
 
 	void Configure(const ConfigBlock &block);
 	void Setup();
@@ -173,11 +172,11 @@ AlsaMixer::Configure(const ConfigBlock &block)
 }
 
 static Mixer *
-alsa_mixer_init(EventLoop &event_loop, gcc_unused AudioOutput &ao,
+alsa_mixer_init(EventLoop &event_loop, [[maybe_unused]] AudioOutput &ao,
 		MixerListener &listener,
 		const ConfigBlock &block)
 {
-	AlsaMixer *am = new AlsaMixer(event_loop, listener);
+	auto *am = new AlsaMixer(event_loop, listener);
 	am->Configure(block);
 
 	return am;
@@ -274,7 +273,7 @@ AlsaMixer::GetVolume()
 		throw FormatRuntimeError("snd_mixer_handle_events() failed: %s",
 					 snd_strerror(err));
 
-	return lrint(100 * get_normalized_playback_volume(elem, SND_MIXER_SCHN_FRONT_LEFT));
+	return lround(100 * get_normalized_playback_volume(elem, SND_MIXER_SCHN_FRONT_LEFT));
 }
 
 void
@@ -283,7 +282,7 @@ AlsaMixer::SetVolume(unsigned volume)
 	assert(handle != nullptr);
 
 	double cur = get_normalized_playback_volume(elem, SND_MIXER_SCHN_FRONT_LEFT);
-	int delta = volume - lrint(100.*cur);
+	int delta = volume - lround(100.*cur);
 	int err = set_normalized_playback_volume(elem, cur + 0.01*delta, delta);
 	if (err < 0)
 		throw FormatRuntimeError("failed to set ALSA volume: %s",

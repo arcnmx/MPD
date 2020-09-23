@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,7 +22,8 @@
 #include "Limits.hxx"
 #include "system/Error.hxx"
 
-#include <errno.h>
+#include <cerrno>
+
 #include <fcntl.h>
 
 void
@@ -54,8 +55,7 @@ ReadLink(Path path)
 		errno = ENOMEM;
 		return nullptr;
 	}
-	buffer[size] = '\0';
-	return AllocatedPath::FromFS(buffer);
+	return AllocatedPath::FromFS(std::string_view{buffer, size_t(size)});
 #endif
 }
 

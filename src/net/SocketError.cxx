@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -28,7 +28,7 @@
 SocketErrorMessage::SocketErrorMessage(socket_error_t code) noexcept
 {
 #ifdef _UNICODE
-	wchar_t buffer[std::size(msg)];
+	wchar_t buffer[msg_size];
 #else
 	auto *buffer = msg;
 #endif
@@ -37,7 +37,7 @@ SocketErrorMessage::SocketErrorMessage(socket_error_t code) noexcept
 				     FORMAT_MESSAGE_IGNORE_INSERTS |
 				     FORMAT_MESSAGE_MAX_WIDTH_MASK,
 				     nullptr, code, 0,
-				     buffer, std::size(msg), nullptr);
+				     buffer, msg_size, nullptr);
 	if (nbytes == 0) {
 		strcpy(msg, "Unknown error");
 		return;

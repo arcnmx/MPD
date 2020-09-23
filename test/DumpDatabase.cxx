@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -29,6 +29,7 @@
 #include "ConfigGlue.hxx"
 #include "tag/Config.hxx"
 #include "fs/Path.hxx"
+#include "fs/NarrowPath.hxx"
 #include "event/Thread.hxx"
 #include "util/ScopeExit.hxx"
 #include "util/PrintException.hxx"
@@ -49,8 +50,7 @@ public:
 		io_thread.Start();
 	}
 
-	~GlobalInit() {
-	}
+	~GlobalInit() = default;
 
 	EventLoop &GetEventLoop() {
 		return io_thread.GetEventLoop();
@@ -68,11 +68,11 @@ InputStream::LockRead(void *, size_t)
 
 class MyDatabaseListener final : public DatabaseListener {
 public:
-	virtual void OnDatabaseModified() noexcept override {
+	void OnDatabaseModified() noexcept override {
 		cout << "DatabaseModified" << endl;
 	}
 
-	virtual void OnDatabaseSongRemoved(const char *uri) noexcept override {
+	void OnDatabaseSongRemoved(const char *uri) noexcept override {
 		cout << "SongRemoved " << uri << endl;
 	}
 };
@@ -107,11 +107,11 @@ try {
 		return 1;
 	}
 
-	const Path config_path = Path::FromFS(argv[1]);
+	const FromNarrowPath config_path = argv[1];
 	const char *const plugin_name = argv[2];
 
 	const DatabasePlugin *plugin = GetDatabasePluginByName(plugin_name);
-	if (plugin == NULL) {
+	if (plugin == nullptr) {
 		cerr << "No such database plugin: " << plugin_name << endl;
 		return EXIT_FAILURE;
 	}

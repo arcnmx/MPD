@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,15 +18,16 @@
  */
 
 #include "mixer/MixerInternal.hxx"
+#include "output/Features.h"
 #include "output/OutputAPI.hxx"
 #include "output/plugins/WinmmOutputPlugin.hxx"
+#include "util/Math.hxx"
 
 #include <mmsystem.h>
 
+#include <cassert>
 #include <stdexcept>
 
-#include <assert.h>
-#include <math.h>
 #include <windows.h>
 
 class WinmmMixer final : public Mixer {
@@ -63,9 +64,9 @@ winmm_volume_encode(int volume)
 }
 
 static Mixer *
-winmm_mixer_init(gcc_unused EventLoop &event_loop, AudioOutput &ao,
+winmm_mixer_init([[maybe_unused]] EventLoop &event_loop, AudioOutput &ao,
 		 MixerListener &listener,
-		 gcc_unused const ConfigBlock &block)
+		 [[maybe_unused]] const ConfigBlock &block)
 {
 	return new WinmmMixer((WinmmOutput &)ao, listener);
 }

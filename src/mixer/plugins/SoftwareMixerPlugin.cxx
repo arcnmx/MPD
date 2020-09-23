@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,8 +22,8 @@
 #include "filter/plugins/VolumeFilterPlugin.hxx"
 #include "pcm/Volume.hxx"
 
-#include <assert.h>
-#include <math.h>
+#include <cassert>
+#include <cmath>
 
 class SoftwareMixer final : public Mixer {
 	Filter *filter = nullptr;
@@ -34,7 +34,7 @@ class SoftwareMixer final : public Mixer {
 	unsigned volume = 100;
 
 public:
-	SoftwareMixer(MixerListener &_listener)
+	explicit SoftwareMixer(MixerListener &_listener)
 		:Mixer(software_mixer_plugin, _listener)
 	{
 	}
@@ -56,10 +56,10 @@ public:
 };
 
 static Mixer *
-software_mixer_init(gcc_unused EventLoop &event_loop,
-		    gcc_unused AudioOutput &ao,
+software_mixer_init([[maybe_unused]] EventLoop &event_loop,
+		    [[maybe_unused]] AudioOutput &ao,
 		    MixerListener &listener,
-		    gcc_unused const ConfigBlock &block)
+		    [[maybe_unused]] const ConfigBlock &block)
 {
 	return new SoftwareMixer(listener);
 }
@@ -70,13 +70,14 @@ PercentVolumeToSoftwareVolume(unsigned volume) noexcept
 {
 	assert(volume <= 100);
 
-	if (volume >= 100)
+	if (volume == 100)
 		return PCM_VOLUME_1;
-	else if (volume > 0)
-		return pcm_float_to_volume((exp(volume / 25.0) - 1) /
+
+	if (volume > 0)
+		return pcm_float_to_volume((std::exp(volume / 25.0f) - 1) /
 					   (54.5981500331F - 1));
-	else
-		return 0;
+
+	return 0;
 }
 
 void
@@ -108,6 +109,6 @@ SoftwareMixer::SetFilter(Filter *_filter) noexcept
 void
 software_mixer_set_filter(Mixer &mixer, Filter *filter) noexcept
 {
-	SoftwareMixer &sm = (SoftwareMixer &)mixer;
+	auto &sm = (SoftwareMixer &)mixer;
 	sm.SetFilter(filter);
 }

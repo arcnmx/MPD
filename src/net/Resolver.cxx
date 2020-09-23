@@ -44,9 +44,10 @@
 #include <net/if.h>
 #endif
 
-#include <string.h>
+#include <cerrno>
+#include <cstring>
+
 #include <stdio.h>
-#include <errno.h>
 
 static inline bool
 ai_is_passive(const struct addrinfo *ai)
@@ -64,7 +65,7 @@ ai_is_passive(const struct addrinfo *ai)
 static void
 FindAndResolveInterfaceName(char *host, size_t size)
 {
-	char *percent = strchr(host, '%');
+	char *percent = std::strchr(host, '%');
 	if (percent == nullptr || percent + 64 > host + size)
 		return;
 
@@ -149,10 +150,6 @@ Resolve(const char *host_and_port, int default_port,
 AddressInfoList
 Resolve(const char *host_port, unsigned default_port, int flags, int socktype)
 {
-	struct addrinfo hints{};
-	hints.ai_flags = flags;
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = socktype;
-
+	const auto hints = MakeAddrInfo(flags, AF_UNSPEC, socktype);
 	return Resolve(host_port, default_port, &hints);
 }

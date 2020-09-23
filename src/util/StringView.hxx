@@ -43,9 +43,10 @@
 
 template<typename T>
 struct BasicStringView : ConstBuffer<T> {
-	typedef typename ConstBuffer<T>::size_type size_type;
-	typedef typename ConstBuffer<T>::value_type value_type;
-	typedef typename ConstBuffer<T>::pointer_type pointer_type;
+	using typename ConstBuffer<T>::size_type;
+	using typename ConstBuffer<T>::value_type;
+	using typename ConstBuffer<T>::pointer;
+	using typename ConstBuffer<T>::const_pointer;
 
 	using ConstBuffer<T>::data;
 	using ConstBuffer<T>::size;
@@ -58,14 +59,13 @@ struct BasicStringView : ConstBuffer<T> {
 	explicit constexpr BasicStringView(ConstBuffer<void> src)
 		:ConstBuffer<T>(ConstBuffer<T>::FromVoid(src)) {}
 
-	constexpr BasicStringView(pointer_type _data, size_type _size) noexcept
+	constexpr BasicStringView(pointer _data, size_type _size) noexcept
 		:ConstBuffer<T>(_data, _size) {}
 
-	constexpr BasicStringView(pointer_type _begin,
-				  pointer_type _end) noexcept
+	constexpr BasicStringView(pointer _begin, pointer _end) noexcept
 		:ConstBuffer<T>(_begin, _end - _begin) {}
 
-	BasicStringView(pointer_type _data) noexcept
+	BasicStringView(pointer _data) noexcept
 		:ConstBuffer<T>(_data,
 				_data != nullptr ? StringLength(_data) : 0) {}
 
@@ -93,13 +93,26 @@ struct BasicStringView : ConstBuffer<T> {
 	using ConstBuffer<T>::pop_back;
 	using ConstBuffer<T>::skip_front;
 
+	constexpr BasicStringView<T> substr(size_type pos,
+					    size_type count) const noexcept {
+		return {data + pos, count};
+	}
+
+	constexpr BasicStringView<T> substr(size_type pos) const noexcept {
+		return {data + pos, size - pos};
+	}
+
+	constexpr BasicStringView<T> substr(const_pointer start) const noexcept {
+		return {start, size_t(data + size - start)};
+	}
+
 	gcc_pure
-	pointer_type Find(value_type ch) const noexcept {
+	pointer Find(value_type ch) const noexcept {
 		return StringFind(data, ch, this->size);
 	}
 
 	gcc_pure
-	pointer_type FindLast(value_type ch) const noexcept {
+	pointer FindLast(value_type ch) const noexcept {
 		return StringFindLast(data, ch, size);
 	}
 

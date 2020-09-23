@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,6 +21,7 @@
 #include "../PlaylistPlugin.hxx"
 #include "../MemorySongEnumerator.hxx"
 #include "tag/Builder.hxx"
+#include "tag/Table.hxx"
 #include "util/ASCII.hxx"
 #include "util/StringView.hxx"
 #include "lib/expat/ExpatParser.hxx"
@@ -40,7 +41,8 @@ struct AsxParser {
 	 */
 	enum {
 		ROOT, ENTRY,
-	} state;
+		TAG,
+	} state{ROOT};
 
 	/**
 	 * The current tag within the "entry" element.  This is only
@@ -56,23 +58,29 @@ struct AsxParser {
 
 	TagBuilder tag_builder;
 
-	AsxParser()
-		:state(ROOT) {}
+	std::string value;
+};
 
+static constexpr struct tag_table asx_tag_elements[] = {
+	/* is that correct?  or should it be COMPOSER or PERFORMER? */
+	{ "author", TAG_ARTIST },
+
+	{ "title", TAG_TITLE },
+	{ nullptr, TAG_NUM_OF_ITEM_TYPES }
 };
 
 static void XMLCALL
 asx_start_element(void *user_data, const XML_Char *element_name,
 		  const XML_Char **atts)
 {
-	AsxParser *parser = (AsxParser *)user_data;
+	auto *parser = (AsxParser *)user_data;
+	parser->value.clear();
 
 	switch (parser->state) {
 	case AsxParser::ROOT:
 		if (StringEqualsCaseASCII(element_name, "entry")) {
 			parser->state = AsxParser::ENTRY;
 			parser->location.clear();
-			parser->tag_type = TAG_NUM_OF_ITEM_TYPES;
 		}
 
 		break;
@@ -83,13 +91,16 @@ asx_start_element(void *user_data, const XML_Char *element_name,
 				ExpatParser::GetAttributeCase(atts, "href");
 			if (href != nullptr)
 				parser->location = href;
-		} else if (StringEqualsCaseASCII(element_name, "author"))
-			/* is that correct?  or should it be COMPOSER
-			   or PERFORMER? */
-			parser->tag_type = TAG_ARTIST;
-		else if (StringEqualsCaseASCII(element_name, "title"))
-			parser->tag_type = TAG_TITLE;
+		} else {
+			parser->tag_type = tag_table_lookup_i(asx_tag_elements,
+							      element_name);
+			if (parser->tag_type != TAG_NUM_OF_ITEM_TYPES)
+				parser->state = AsxParser::TAG;
+		}
 
+		break;
+
+	case AsxParser::TAG:
 		break;
 	}
 }
@@ -97,7 +108,7 @@ asx_start_element(void *user_data, const XML_Char *element_name,
 static void XMLCALL
 asx_end_element(void *user_data, const XML_Char *element_name)
 {
-	AsxParser *parser = (AsxParser *)user_data;
+	auto *parser = (AsxParser *)user_data;
 
 	switch (parser->state) {
 	case AsxParser::ROOT:
@@ -110,27 +121,34 @@ asx_end_element(void *user_data, const XML_Char *element_name)
 							    parser->tag_builder.Commit());
 
 			parser->state = AsxParser::ROOT;
-		} else
-			parser->tag_type = TAG_NUM_OF_ITEM_TYPES;
+		}
 
 		break;
+
+	case AsxParser::TAG:
+		if (!parser->value.empty())
+			parser->tag_builder.AddItem(parser->tag_type,
+						    StringView(parser->value.data(),
+							       parser->value.length()));
+		parser->state = AsxParser::ENTRY;
+		break;
 	}
+
+	parser->value.clear();
 }
 
 static void XMLCALL
 asx_char_data(void *user_data, const XML_Char *s, int len)
 {
-	AsxParser *parser = (AsxParser *)user_data;
+	auto *parser = (AsxParser *)user_data;
 
 	switch (parser->state) {
 	case AsxParser::ROOT:
+	case AsxParser::ENTRY:
 		break;
 
-	case AsxParser::ENTRY:
-		if (parser->tag_type != TAG_NUM_OF_ITEM_TYPES)
-			parser->tag_builder.AddItem(parser->tag_type,
-						    StringView(s, len));
-
+	case AsxParser::TAG:
+		parser->value.append(s, len);
 		break;
 	}
 }

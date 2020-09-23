@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,9 +21,8 @@
 #include "lib/crypto/MD5.hxx"
 #include "util/ConstBuffer.hxx"
 
+#include <cassert>
 #include <stdexcept>
-
-#include <assert.h>
 
 namespace {
 
@@ -44,7 +43,7 @@ public:
 	}
 };
 
-}
+} // namespace
 
 QobuzClient::QobuzClient(EventLoop &event_loop,
 			 const char *_base_url,

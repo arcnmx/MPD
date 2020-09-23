@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,10 +22,10 @@
 
 #include "Log.hxx" // IWYU pragma: export
 
-#include <stdarg.h>
+#include <cstdarg>
 
 void
 LogFormatV(LogLevel level, const Domain &domain,
-	   const char *fmt, va_list ap) noexcept;
+	   const char *fmt, std::va_list ap) noexcept;
 
 #endif /* LOG_H */

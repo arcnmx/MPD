@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,9 +18,23 @@
  */
 
 #include "DecoderPlugin.hxx"
+#include "util/StringCompare.hxx"
 #include "util/StringUtil.hxx"
 
-#include <assert.h>
+#include <algorithm>
+#include <cassert>
+
+bool
+DecoderPlugin::SupportsUri(const char *uri) const noexcept
+{
+	if (protocols != nullptr) {
+		const auto p = protocols();
+		return std::any_of(p.begin(), p.end(), [uri](const auto &schema)
+			{ return StringStartsWithIgnoreCase(uri, schema.c_str()); } );
+	}
+
+	return false;
+}
 
 bool
 DecoderPlugin::SupportsSuffix(const char *suffix) const noexcept

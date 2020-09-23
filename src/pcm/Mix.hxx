@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,7 +23,7 @@
 #include "SampleFormat.hxx"
 #include "util/Compiler.h"
 
-#include <stddef.h>
+#include <cstddef>
 
 class PcmDither;
 
@@ -44,7 +44,7 @@ class PcmDither;
  *
  * @return true on success, false if the format is not supported
  */
-gcc_warn_unused_result
+[[nodiscard]]
 bool
 pcm_mix(PcmDither &dither, void *buffer1, const void *buffer2, size_t size,
 	SampleFormat format, float portion1) noexcept;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -38,13 +38,13 @@
 #include "util/UriExtract.hxx"
 #include "Log.hxx"
 
+#include <cassert>
+#include <cerrno>
 #include <exception>
 #include <memory>
 
-#include <assert.h>
 #include <string.h>
 #include <stdlib.h>
-#include <errno.h>
 
 UpdateWalk::UpdateWalk(const UpdateConfig &_config,
 		       EventLoop &_loop, DatabaseListener &_listener,
@@ -81,7 +81,7 @@ UpdateWalk::RemoveExcludedFromDirectory(Directory &directory,
 	directory.ForEachSongSafe([&](Song &song){
 			assert(&song.parent == &directory);
 
-			const auto name_fs = AllocatedPath::FromUTF8(song.filename.c_str());
+			const auto name_fs = AllocatedPath::FromUTF8(song.filename);
 			if (name_fs.IsNull() || exclude_list.Check(name_fs)) {
 				editor.DeleteSong(directory, &song);
 				modified = true;
@@ -103,7 +103,7 @@ UpdateWalk::PurgeDeletedFromDirectory(Directory &directory) noexcept
 
 	directory.ForEachSongSafe([&](Song &song){
 			if (!directory_child_is_regular(storage, directory,
-							song.filename.c_str())) {
+							song.filename)) {
 				editor.LockDeleteSong(directory, &song);
 
 				modified = true;
@@ -113,8 +113,7 @@ UpdateWalk::PurgeDeletedFromDirectory(Directory &directory) noexcept
 	for (auto i = directory.playlists.begin(),
 		     end = directory.playlists.end();
 	     i != end;) {
-		if (!directory_child_is_regular(storage, directory,
-						i->name.c_str())) {
+		if (!directory_child_is_regular(storage, directory, i->name)) {
 			const ScopeDatabaseLock protect;
 			i = directory.playlists.erase(i);
 		} else
@@ -192,7 +191,7 @@ UpdateWalk::UpdateDirectoryChild(Directory &directory,
 				 const ExcludeList &exclude_list,
 				 const char *name, const StorageFileInfo &info) noexcept
 try {
-	assert(strchr(name, '/') == nullptr);
+	assert(std::strchr(name, '/') == nullptr);
 
 	if (info.IsRegular()) {
 		UpdateRegularFile(directory, name, info);
@@ -219,18 +218,18 @@ try {
 	LogError(std::current_exception());
 }
 
-/* we don't look at "." / ".." nor files with newlines in their name */
+/* we don't look at files with newlines in their name */
 gcc_pure
 static bool
 skip_path(const char *name_utf8) noexcept
 {
-	return strchr(name_utf8, '\n') != nullptr;
+	return std::strchr(name_utf8, '\n') != nullptr;
 }
 
 gcc_pure
 bool
 UpdateWalk::SkipSymlink(const Directory *directory,
-			const char *utf8_name) const noexcept
+			std::string_view utf8_name) const noexcept
 {
 #ifndef _WIN32
 	const auto path_fs = storage.MapChildFS(directory->GetPath(),
@@ -261,9 +260,9 @@ UpdateWalk::SkipSymlink(const Directory *directory,
 		if (target_utf8.empty())
 			return true;
 
-		const char *relative =
+		auto relative =
 			storage.MapToRelativeUTF8(target_utf8.c_str());
-		return relative != nullptr
+		return relative.data() != nullptr
 			? !config.follow_inside_symlinks
 			: !config.follow_outside_symlinks;
 	}
@@ -323,8 +322,8 @@ UpdateWalk::UpdateDirectory(Directory &directory,
 
 	try {
 		Mutex mutex;
-		auto is = InputStream::OpenReady(PathTraitsUTF8::Build(storage.MapUTF8(directory.GetPath()).c_str(),
-								       ".mpdignore").c_str(),
+		auto is = InputStream::OpenReady(storage.MapUTF8(PathTraitsUTF8::Build(directory.GetPath(),
+										       ".mpdignore")).c_str(),
 						 mutex);
 		child_exclude_list.Load(std::move(is));
 	} catch (...) {
@@ -370,7 +369,7 @@ UpdateWalk::UpdateDirectory(Directory &directory,
 inline Directory *
 UpdateWalk::DirectoryMakeChildChecked(Directory &parent,
 				      const char *uri_utf8,
-				      const char *name_utf8) noexcept
+				      std::string_view name_utf8) noexcept
 {
 	Directory *directory;
 	{
@@ -410,28 +409,29 @@ UpdateWalk::DirectoryMakeChildChecked(Directory &parent,
 
 inline Directory *
 UpdateWalk::DirectoryMakeUriParentChecked(Directory &root,
-					  const char *uri) noexcept
+					  std::string_view _uri) noexcept
 {
 	Directory *directory = &root;
-	char *duplicated = xstrdup(uri);
-	char *name_utf8 = duplicated, *slash;
+	StringView uri(_uri);
 
-	while ((slash = strchr(name_utf8, '/')) != nullptr) {
-		*slash = 0;
-
-		if (StringIsEmpty(name_utf8))
-			continue;
-
-		directory = DirectoryMakeChildChecked(*directory,
-						      duplicated,
-						      name_utf8);
-		if (directory == nullptr)
+	while (true) {
+		auto s = uri.Split('/');
+		const std::string_view name = s.first;
+		const auto rest = s.second;
+		if (rest == nullptr)
 			break;
 
-		name_utf8 = slash + 1;
+		if (!name.empty()) {
+			directory = DirectoryMakeChildChecked(*directory,
+							      std::string(name).c_str(),
+							      s.first);
+			if (directory == nullptr)
+				break;
+		}
+
+		uri = s.second;
 	}
 
-	free(duplicated);
 	return directory;
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -49,7 +49,7 @@ class CompositeStorage final : public Storage {
 		 */
 		std::unique_ptr<Storage> storage;
 
-		std::map<std::string, Directory> children;
+		std::map<std::string, Directory, std::less<>> children;
 
 		gcc_pure
 		bool IsEmpty() const noexcept {
@@ -57,21 +57,21 @@ class CompositeStorage final : public Storage {
 		}
 
 		gcc_pure
-		const Directory *Find(const char *uri) const noexcept;
+		const Directory *Find(std::string_view uri) const noexcept;
 
-		Directory &Make(const char *uri);
+		Directory &Make(std::string_view uri);
 
 		bool Unmount() noexcept;
-		bool Unmount(const char *uri) noexcept;
+		bool Unmount(std::string_view uri) noexcept;
 
 		gcc_pure
 		bool MapToRelativeUTF8(std::string &buffer,
-				       const char *uri) const noexcept;
+				       std::string_view uri) const noexcept;
 	};
 
 	struct FindResult {
 		const Directory *directory;
-		const char *uri;
+		std::string_view uri;
 	};
 
 	/**
@@ -87,7 +87,7 @@ class CompositeStorage final : public Storage {
 
 public:
 	CompositeStorage() noexcept;
-	virtual ~CompositeStorage();
+	~CompositeStorage() override;
 
 	/**
 	 * Get the #Storage at the specified mount point.  Returns
@@ -98,7 +98,16 @@ public:
 	 * value is being used.
 	 */
 	gcc_pure gcc_nonnull_all
-	Storage *GetMount(const char *uri) noexcept;
+	Storage *GetMount(std::string_view uri) noexcept;
+
+	/**
+         * Is the given URI a mount point, i.e. is something already
+         * mounted on this path?
+	 */
+	gcc_pure gcc_nonnull_all
+	bool IsMountPoint(const char *uri) noexcept {
+		return GetMount(uri) != nullptr;
+	}
 
 	/**
 	 * Call the given function for each mounted storage, including
@@ -112,19 +121,28 @@ public:
 		VisitMounts(uri, root, t);
 	}
 
+	/**
+	 * Is a storage with the given URI already mounted?
+	 */
+	gcc_pure gcc_nonnull_all
+	bool IsMounted(const char *storage_uri) const noexcept {
+		const std::lock_guard<Mutex> protect(mutex);
+		return IsMounted(root, storage_uri);
+	}
+
 	void Mount(const char *uri, std::unique_ptr<Storage> storage);
 	bool Unmount(const char *uri);
 
 	/* virtual methods from class Storage */
-	StorageFileInfo GetInfo(const char *uri, bool follow) override;
+	StorageFileInfo GetInfo(std::string_view uri, bool follow) override;
 
-	std::unique_ptr<StorageDirectoryReader> OpenDirectory(const char *uri) override;
+	std::unique_ptr<StorageDirectoryReader> OpenDirectory(std::string_view uri) override;
 
-	std::string MapUTF8(const char *uri) const noexcept override;
+	std::string MapUTF8(std::string_view uri) const noexcept override;
 
-	AllocatedPath MapFS(const char *uri) const noexcept override;
+	AllocatedPath MapFS(std::string_view uri) const noexcept override;
 
-	const char *MapToRelativeUTF8(const char *uri) const noexcept override;
+	std::string_view MapToRelativeUTF8(std::string_view uri) const noexcept override;
 
 private:
 	template<typename T>
@@ -146,6 +164,22 @@ private:
 		}
 	}
 
+	gcc_pure gcc_nonnull_all
+	static bool IsMounted(const Directory &directory,
+			      const char *storage_uri) noexcept {
+		if (directory.storage) {
+			const auto uri = directory.storage->MapUTF8("");
+			if (uri == storage_uri)
+				return true;
+		}
+
+		for (const auto &i : directory.children)
+			if (IsMounted(i.second, storage_uri))
+				return true;
+
+		return false;
+	}
+
 	/**
 	 * Follow the given URI path, and find the outermost directory
 	 * which is a #Storage mount point.  If there are no mounts,
@@ -155,7 +189,7 @@ private:
 	 * the URI was used).
 	 */
 	gcc_pure
-	FindResult FindStorage(const char *uri) const noexcept;
+	FindResult FindStorage(std::string_view uri) const noexcept;
 
 	const char *MapToRelativeUTF8(const Directory &directory,
 				      const char *uri) const;

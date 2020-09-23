@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -27,10 +27,9 @@
 #include <boost/intrusive/link_mode.hpp>
 #include <boost/intrusive/list_hook.hpp>
 
-#include <queue>
+#include <cstddef>
 #include <list>
-
-#include <stddef.h>
+#include <queue>
 
 class UniqueSocketDescriptor;
 class HttpdOutput;

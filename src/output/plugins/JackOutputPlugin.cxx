@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,6 +20,7 @@
 #include "config.h"
 #include "JackOutputPlugin.hxx"
 #include "../OutputAPI.hxx"
+#include "output/Features.h"
 #include "thread/Mutex.hxx"
 #include "util/ScopeExit.hxx"
 #include "util/ConstBuffer.hxx"
@@ -29,8 +30,7 @@
 #include "Log.hxx"
 
 #include <atomic>
-
-#include <assert.h>
+#include <cassert>
 
 #include <jack/jack.h>
 #include <jack/types.h>
@@ -247,7 +247,7 @@ JackOutput::JackOutput(const ConfigBlock &block)
 			      num_source_ports, num_destination_ports,
 			      block.line);
 
-	ringbuffer_size = block.GetPositiveValue("ringbuffer_size", 32768u);
+	ringbuffer_size = block.GetPositiveValue("ringbuffer_size", 32768U);
 }
 
 inline jack_nframes_t
@@ -283,7 +283,7 @@ MultiReadAdvance(ConstBuffer<jack_ringbuffer_t *> buffers,
 static void
 WriteSilence(jack_port_t &port, jack_nframes_t nframes)
 {
-	jack_default_audio_sample_t *out =
+	auto *out =
 		(jack_default_audio_sample_t *)
 		jack_port_get_buffer(&port, nframes);
 	if (out == nullptr)
@@ -313,7 +313,7 @@ static void
 Copy(jack_port_t &dest, jack_nframes_t nframes,
      jack_ringbuffer_t &src, jack_nframes_t available)
 {
-	jack_default_audio_sample_t *out =
+	auto *out =
 		(jack_default_audio_sample_t *)
 		jack_port_get_buffer(&dest, nframes);
 	if (out == nullptr)
@@ -376,7 +376,7 @@ mpd_jack_error(const char *msg)
 static void
 mpd_jack_info(const char *msg)
 {
-	LogDefault(jack_output_domain, msg);
+	LogNotice(jack_output_domain, msg);
 }
 #endif
 
@@ -405,10 +405,11 @@ JackOutput::Connect()
 	jack_on_info_shutdown(client, OnShutdown, this);
 
 	for (unsigned i = 0; i < num_source_ports; ++i) {
+		unsigned long portflags = JackPortIsOutput | JackPortIsTerminal;
 		ports[i] = jack_port_register(client,
 					      source_ports[i].c_str(),
 					      JACK_DEFAULT_AUDIO_TYPE,
-					      JackPortIsOutput, 0);
+					      portflags, 0);
 		if (ports[i] == nullptr) {
 			Disconnect();
 			throw FormatRuntimeError("Cannot register output port \"%s\"",
@@ -418,7 +419,7 @@ JackOutput::Connect()
 }
 
 static bool
-mpd_jack_test_default_device(void)
+mpd_jack_test_default_device()
 {
 	return true;
 }

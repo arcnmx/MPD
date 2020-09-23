@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,9 +21,10 @@
 #include "ReplayGainConfig.hxx"
 #include "config/Data.hxx"
 
-#include <assert.h>
-#include <stdlib.h>
-#include <math.h>
+#include <cassert>
+#include <cmath>
+#include <cstdlib>
+#include <stdexcept>
 
 static float
 ParsePreamp(const char *s)
@@ -31,14 +32,14 @@ ParsePreamp(const char *s)
 	assert(s != nullptr);
 
 	char *endptr;
-	float f = strtod(s, &endptr);
+	float f = std::strtof(s, &endptr);
 	if (endptr == s || *endptr != '\0')
 		throw std::invalid_argument("Not a numeric value");
 
-	if (f < -15 || f > 15)
+	if (f < -15.0f || f > 15.0f)
 		throw std::invalid_argument("Number must be between -15 and 15");
 
-	return pow(10, f / 20.0);
+	return std::pow(10.0f, f / 20.0f);
 }
 
 ReplayGainConfig
@@ -49,13 +50,13 @@ LoadReplayGainConfig(const ConfigData &config)
 	replay_gain_config.preamp = config.With(ConfigOption::REPLAYGAIN_PREAMP, [](const char *s){
 		return s != nullptr
 			? ParsePreamp(s)
-			: 1.0;
+			: 1.0f;
 	});
 
 	replay_gain_config.missing_preamp = config.With(ConfigOption::REPLAYGAIN_MISSING_PREAMP, [](const char *s){
 		return s != nullptr
 			? ParsePreamp(s)
-			: 1.0;
+			: 1.0f;
 	});
 
 	replay_gain_config.limit = config.GetBool(ConfigOption::REPLAYGAIN_LIMIT,

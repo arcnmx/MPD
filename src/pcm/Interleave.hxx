@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,7 +23,7 @@
 #include "util/Compiler.h"
 #include "util/ConstBuffer.hxx"
 
-#include <stdint.h>
+#include <cstdint>
 
 /**
  * Interleave planar PCM samples from #src to #dest.

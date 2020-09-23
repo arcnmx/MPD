@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -27,10 +27,15 @@
 #include "util/StringView.hxx"
 #include "Log.hxx"
 
+#ifdef _WIN32
+/* assume ModPlug is built as static library on Windows; without
+   this, linking to the static library would fail */
+#define MODPLUG_STATIC
+#endif
+
 #include <libmodplug/modplug.h>
 
-
-#include <assert.h>
+#include <cassert>
 
 static constexpr Domain modplug_domain("modplug");
 

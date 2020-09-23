@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,9 +21,11 @@
 #include "Log.hxx"
 #include "util/Domain.hxx"
 #include "util/StringStrip.hxx"
+#include "Version.h"
 #include "config.h"
 
-#include <assert.h>
+#include <cassert>
+
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -45,7 +47,7 @@ ToAndroidLogLevel(LogLevel log_level) noexcept
 		return ANDROID_LOG_DEBUG;
 
 	case LogLevel::INFO:
-	case LogLevel::DEFAULT:
+	case LogLevel::NOTICE:
 		return ANDROID_LOG_INFO;
 
 	case LogLevel::WARNING:
@@ -61,7 +63,7 @@ ToAndroidLogLevel(LogLevel log_level) noexcept
 
 #else
 
-static LogLevel log_threshold = LogLevel::DEFAULT;
+static LogLevel log_threshold = LogLevel::NOTICE;
 
 static bool enable_timestamp;
 
@@ -120,7 +122,7 @@ ToSysLogLevel(LogLevel log_level) noexcept
 	case LogLevel::INFO:
 		return LOG_INFO;
 
-	case LogLevel::DEFAULT:
+	case LogLevel::NOTICE:
 		return LOG_NOTICE;
 
 	case LogLevel::WARNING:

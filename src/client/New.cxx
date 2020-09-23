@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -28,8 +28,9 @@
 #include "net/SocketAddress.hxx"
 #include "net/ToString.hxx"
 #include "Log.hxx"
+#include "Version.h"
 
-#include <assert.h>
+#include <cassert>
 
 static constexpr char GREETING[] = "OK MPD " PROTOCOL_VERSION "\n";
 
@@ -67,11 +68,12 @@ client_new(EventLoop &loop, Partition &partition,
 	(void)fd.Write(GREETING, sizeof(GREETING) - 1);
 
 	const unsigned num = next_client_num++;
-	Client *client = new Client(loop, partition, std::move(fd), uid,
+	auto *client = new Client(loop, partition, std::move(fd), uid,
 				    permission,
 				    num);
 
 	client_list.Add(*client);
+	partition.clients.push_back(*client);
 
 	FormatInfo(client_domain, "[%u] opened from %s",
 		   num, remote.c_str());
@@ -81,6 +83,7 @@ void
 Client::Close() noexcept
 {
 	partition->instance.client_list->Remove(*this);
+	partition->clients.erase(partition->clients.iterator_to(*this));
 
 	if (FullyBufferedSocket::IsDefined())
 		FullyBufferedSocket::Close();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2018 Max Kellermann <max.kellermann@gmail.com>
+ * Copyright 2013-2020 Max Kellermann <max.kellermann@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -34,6 +34,8 @@
 #include "WStringAPI.hxx"
 #include "Compiler.h"
 
+#include <string_view>
+
 #include <wchar.h>
 
 gcc_pure gcc_nonnull_all
@@ -41,6 +43,22 @@ static inline bool
 StringIsEmpty(const wchar_t *string) noexcept
 {
 	return *string == 0;
+}
+
+gcc_pure
+static inline bool
+StringIsEqual(std::wstring_view a, std::wstring_view b) noexcept
+{
+	return a.size() == b.size() &&
+		StringIsEqual(a.data(), b.data(), b.size());
+}
+
+gcc_pure
+static inline bool
+StringIsEqualIgnoreCase(std::wstring_view a, std::wstring_view b) noexcept
+{
+	return a.size() == b.size() &&
+		StringIsEqualIgnoreCase(a.data(), b.data(), b.size());
 }
 
 gcc_pure gcc_nonnull_all
@@ -79,6 +97,21 @@ StringStartsWithIgnoreCase(const wchar_t *haystack,
 			   WStringView needle) noexcept
 {
 	return StringIsEqualIgnoreCase(haystack, needle.data, needle.size);
+}
+
+/**
+ * Returns the portion of the string after a prefix.  If the string
+ * does not begin with the specified prefix, this function returns
+ * nullptr.
+ * This function is case-independent.
+ */
+gcc_pure gcc_nonnull_all
+static inline const wchar_t *
+StringAfterPrefixIgnoreCase(const wchar_t *haystack, WStringView needle) noexcept
+{
+	return StringStartsWithIgnoreCase(haystack, needle)
+		? haystack + needle.size
+		: nullptr;
 }
 
 /**

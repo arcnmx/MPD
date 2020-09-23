@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,6 +20,7 @@
 #include "config.h"
 #include "EncoderList.hxx"
 #include "EncoderPlugin.hxx"
+#include "encoder/Features.h"
 #include "plugins/NullEncoderPlugin.hxx"
 #include "plugins/WaveEncoderPlugin.hxx"
 #include "plugins/VorbisEncoderPlugin.hxx"
@@ -28,6 +29,7 @@
 #include "plugins/ShineEncoderPlugin.hxx"
 #include "plugins/LameEncoderPlugin.hxx"
 #include "plugins/TwolameEncoderPlugin.hxx"
+#include "decoder/Features.h"
 
 #include <string.h>
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -36,7 +36,7 @@ class LocalDirectoryReader final : public StorageDirectoryReader {
 	std::string name_utf8;
 
 public:
-	LocalDirectoryReader(AllocatedPath &&_base_fs)
+	explicit LocalDirectoryReader(AllocatedPath &&_base_fs)
 		:base_fs(std::move(_base_fs)), reader(base_fs) {}
 
 	/* virtual methods from class StorageDirectoryReader */
@@ -56,18 +56,18 @@ public:
 	}
 
 	/* virtual methods from class Storage */
-	StorageFileInfo GetInfo(const char *uri_utf8, bool follow) override;
+	StorageFileInfo GetInfo(std::string_view uri_utf8, bool follow) override;
 
-	std::unique_ptr<StorageDirectoryReader> OpenDirectory(const char *uri_utf8) override;
+	std::unique_ptr<StorageDirectoryReader> OpenDirectory(std::string_view uri_utf8) override;
 
-	std::string MapUTF8(const char *uri_utf8) const noexcept override;
+	[[nodiscard]] std::string MapUTF8(std::string_view uri_utf8) const noexcept override;
 
-	AllocatedPath MapFS(const char *uri_utf8) const noexcept override;
+	[[nodiscard]] AllocatedPath MapFS(std::string_view uri_utf8) const noexcept override;
 
-	const char *MapToRelativeUTF8(const char *uri_utf8) const noexcept override;
+	[[nodiscard]] std::string_view MapToRelativeUTF8(std::string_view uri_utf8) const noexcept override;
 
 private:
-	AllocatedPath MapFSOrThrow(const char *uri_utf8) const;
+	[[nodiscard]] AllocatedPath MapFSOrThrow(std::string_view uri_utf8) const;
 };
 
 static StorageFileInfo
@@ -95,29 +95,25 @@ Stat(Path path, bool follow)
 }
 
 std::string
-LocalStorage::MapUTF8(const char *uri_utf8) const noexcept
+LocalStorage::MapUTF8(std::string_view uri_utf8) const noexcept
 {
-	assert(uri_utf8 != nullptr);
-
-	if (StringIsEmpty(uri_utf8))
+	if (uri_utf8.empty())
 		return base_utf8;
 
-	return PathTraitsUTF8::Build(base_utf8.c_str(), uri_utf8);
+	return PathTraitsUTF8::Build(base_utf8, uri_utf8);
 }
 
 AllocatedPath
-LocalStorage::MapFSOrThrow(const char *uri_utf8) const
+LocalStorage::MapFSOrThrow(std::string_view uri_utf8) const
 {
-	assert(uri_utf8 != nullptr);
-
-	if (StringIsEmpty(uri_utf8))
+	if (uri_utf8.empty())
 		return base_fs;
 
 	return base_fs / AllocatedPath::FromUTF8Throw(uri_utf8);
 }
 
 AllocatedPath
-LocalStorage::MapFS(const char *uri_utf8) const noexcept
+LocalStorage::MapFS(std::string_view uri_utf8) const noexcept
 {
 	try {
 		return MapFSOrThrow(uri_utf8);
@@ -126,31 +122,22 @@ LocalStorage::MapFS(const char *uri_utf8) const noexcept
 	}
 }
 
-const char *
-LocalStorage::MapToRelativeUTF8(const char *uri_utf8) const noexcept
+std::string_view
+LocalStorage::MapToRelativeUTF8(std::string_view uri_utf8) const noexcept
 {
-	return PathTraitsUTF8::Relative(base_utf8.c_str(), uri_utf8);
+	return PathTraitsUTF8::Relative(base_utf8, uri_utf8);
 }
 
 StorageFileInfo
-LocalStorage::GetInfo(const char *uri_utf8, bool follow)
+LocalStorage::GetInfo(std::string_view uri_utf8, bool follow)
 {
 	return Stat(MapFSOrThrow(uri_utf8), follow);
 }
 
 std::unique_ptr<StorageDirectoryReader>
-LocalStorage::OpenDirectory(const char *uri_utf8)
+LocalStorage::OpenDirectory(std::string_view uri_utf8)
 {
 	return std::make_unique<LocalDirectoryReader>(MapFSOrThrow(uri_utf8));
-}
-
-gcc_pure
-static bool
-SkipNameFS(PathTraitsFS::const_pointer_type name_fs) noexcept
-{
-	return name_fs[0] == '.' &&
-		(name_fs[1] == 0 ||
-		 (name_fs[1] == '.' && name_fs[2] == 0));
 }
 
 const char *
@@ -158,7 +145,7 @@ LocalDirectoryReader::Read() noexcept
 {
 	while (reader.ReadEntry()) {
 		const Path name_fs = reader.GetEntry();
-		if (SkipNameFS(name_fs.c_str()))
+		if (PathTraitsFS::IsSpecialFilename(name_fs.c_str()))
 			continue;
 
 		try {

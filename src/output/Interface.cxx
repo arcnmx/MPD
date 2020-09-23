@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,8 +23,8 @@
 #include <stdexcept>
 
 void
-AudioOutput::SetAttribute(gcc_unused std::string &&name,
-			  gcc_unused std::string &&value)
+AudioOutput::SetAttribute([[maybe_unused]] std::string &&name,
+			  [[maybe_unused]] std::string &&value)
 {
 	throw std::invalid_argument("Unsupported attribute");
 }

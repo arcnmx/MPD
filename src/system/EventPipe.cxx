@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,11 +18,12 @@
  */
 
 #include "EventPipe.hxx"
-#include "FileDescriptor.hxx"
+#include "io/FileDescriptor.hxx"
 #include "system/Error.hxx"
 #include "util/Compiler.h"
 
-#include <assert.h>
+#include <cassert>
+
 #include <unistd.h>
 
 #ifdef _WIN32
@@ -84,7 +85,7 @@ EventPipe::Write() noexcept
 #ifdef _WIN32
 	send(fds[1], "", 1, 0);
 #else
-	gcc_unused ssize_t nbytes = write(fds[1], "", 1);
+	[[maybe_unused]] ssize_t nbytes = write(fds[1], "", 1);
 #endif
 }
 

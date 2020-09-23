@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -34,11 +34,12 @@
 #include "Log.hxx"
 #include "config/Block.hxx"
 
+#include <cassert>
+#include <cstdint>
+
 #include <stdio.h>
-#include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
-#include <assert.h>
 
 #include <cdio/cd_types.h>
 
@@ -81,14 +82,14 @@ class CdioParanoiaInputStream final : public InputStream {
 		SetReady();
 	}
 
-	~CdioParanoiaInputStream() {
+	~CdioParanoiaInputStream() override {
 		para = {};
 		cdio_cddap_close_no_free_cdio(drv);
 		cdio_destroy(cdio);
 	}
 
 	/* virtual methods from InputStream */
-	bool IsEOF() const noexcept override;
+	[[nodiscard]] bool IsEOF() const noexcept override;
 	size_t Read(std::unique_lock<Mutex> &lock,
 		    void *ptr, size_t size) override;
 	void Seek(std::unique_lock<Mutex> &lock, offset_type offset) override;
@@ -112,7 +113,7 @@ input_cdio_init(EventLoop &, const ConfigBlock &block)
 			throw FormatRuntimeError("Unrecognized 'default_byte_order' setting: %s",
 						 value);
 	}
-	speed = block.GetBlockValue("speed",0u);
+	speed = block.GetBlockValue("speed",0U);
 }
 
 struct CdioUri {
@@ -132,7 +133,7 @@ parse_cdio_uri(const char *src)
 		return dest;
 	}
 
-	const char *slash = strrchr(src, '/');
+	const char *slash = std::strrchr(src, '/');
 	if (slash == nullptr) {
 		/* play the whole CD in the specified drive */
 		CopyTruncateString(dest.device, src, sizeof(dest.device));
@@ -162,7 +163,7 @@ parse_cdio_uri(const char *src)
 }
 
 static AllocatedPath
-cdio_detect_device(void)
+cdio_detect_device()
 {
 	char **devices = cdio_get_devices_with_cap(nullptr, CDIO_FS_AUDIO,
 						   false);

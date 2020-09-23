@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -26,7 +26,7 @@
 #include "tag/Handler.hxx"
 #include "tag/ReplayGain.hxx"
 #include "tag/MixRamp.hxx"
-#include "CheckAudioFormat.hxx"
+#include "pcm/CheckAudioFormat.hxx"
 #include "util/Clamp.hxx"
 #include "util/StringCompare.hxx"
 #include "util/Domain.hxx"
@@ -39,7 +39,8 @@
 #include <id3tag.h>
 #endif
 
-#include <assert.h>
+#include <cassert>
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -146,10 +147,10 @@ private:
 	void ParseId3(size_t tagsize, Tag *tag) noexcept;
 	MadDecoderAction DecodeNextFrame(bool skip, Tag *tag) noexcept;
 
-	gcc_pure
+	[[nodiscard]] gcc_pure
 	offset_type ThisFrameOffset() const noexcept;
 
-	gcc_pure
+	[[nodiscard]] gcc_pure
 	offset_type RestIncludingThisFrame() const noexcept;
 
 	/**
@@ -168,7 +169,7 @@ private:
 		times = new mad_timer_t[max_frames];
 	}
 
-	gcc_pure
+	[[nodiscard]] gcc_pure
 	size_t TimeToFrame(SongTime t) const noexcept;
 
 	/**
@@ -516,8 +517,8 @@ parse_xing(struct xing *xing, struct mad_bitptr *ptr, int *oldbitlen) noexcept
 	if (xing->flags & XING_TOC) {
 		if (bitlen < 800)
 			return false;
-		for (unsigned i = 0; i < 100; ++i)
-			xing->toc[i] = mad_bit_read(ptr, 8);
+		for (unsigned char & i : xing->toc)
+			i = mad_bit_read(ptr, 8);
 		bitlen -= 800;
 	}
 
@@ -584,8 +585,8 @@ parse_lame(struct lame *lame, struct mad_bitptr *ptr, int *bitlen) noexcept
 
 	mad_bit_skip(ptr, 16);
 
-	lame->peak = mad_f_todouble(mad_bit_read(ptr, 32) << 5); /* peak */
-	FormatDebug(mad_domain, "LAME peak found: %f", lame->peak);
+	lame->peak = MAD_F(mad_bit_read(ptr, 32) << 5); /* peak */
+	FormatDebug(mad_domain, "LAME peak found: %f", double(lame->peak));
 
 	lame->track_gain = 0;
 	unsigned name = mad_bit_read(ptr, 3); /* gain name */
@@ -593,9 +594,9 @@ parse_lame(struct lame *lame, struct mad_bitptr *ptr, int *bitlen) noexcept
 	unsigned sign = mad_bit_read(ptr, 1); /* sign bit */
 	int gain = mad_bit_read(ptr, 9); /* gain*10 */
 	if (gain && name == 1 && orig != 0) {
-		lame->track_gain = ((sign ? -gain : gain) / 10.0) + adj;
+		lame->track_gain = ((sign ? -gain : gain) / 10.0f) + adj;
 		FormatDebug(mad_domain, "LAME track gain found: %f",
-			    lame->track_gain);
+			    double(lame->track_gain));
 	}
 
 	/* tmz reports that this isn't currently written by any version of lame
@@ -611,7 +612,7 @@ parse_lame(struct lame *lame, struct mad_bitptr *ptr, int *bitlen) noexcept
 	if (gain && name == 2 && orig != 0) {
 		lame->album_gain = ((sign ? -gain : gain) / 10.0) + adj;
 		FormatDebug(mad_domain, "LAME album gain found: %f",
-			    lame->track_gain);
+			    double(lame->track_gain));
 	}
 #else
 	mad_bit_skip(ptr, 16);
@@ -686,6 +687,11 @@ MadDecoder::DecodeFirstFrame(Tag *tag) noexcept
 {
 	struct xing xing;
 
+#if GCC_CHECK_VERSION(10,0)
+	/* work around bogus -Wuninitialized in GCC 10 */
+	xing.frames = 0;
+#endif
+
 	while (true) {
 		const auto action = DecodeNextFrame(false, tag);
 		switch (action) {
@@ -740,7 +746,7 @@ MadDecoder::DecodeFirstFrame(Tag *tag) noexcept
 			/* Album gain isn't currently used.  See comment in
 			 * parse_lame() for details. -- jat */
 			if (client != nullptr && !found_replay_gain &&
-			    lame.track_gain) {
+			    lame.track_gain > 0.0f) {
 				ReplayGainInfo rgi;
 				rgi.Clear();
 				rgi.track.gain = lame.track_gain;
@@ -755,7 +761,7 @@ MadDecoder::DecodeFirstFrame(Tag *tag) noexcept
 
 	if (max_frames > 8 * 1024 * 1024) {
 		FormatWarning(mad_domain,
-			      "mp3 file header indicates too many frames: %lu",
+			      "mp3 file header indicates too many frames: %zu",
 			      max_frames);
 		return false;
 	}
@@ -1007,7 +1013,7 @@ MadDecoder::RunScan(TagHandler &handler) noexcept
 }
 
 static bool
-mad_decoder_scan_stream(InputStream &is, TagHandler &handler) noexcept
+mad_decoder_scan_stream(InputStream &is, TagHandler &handler)
 {
 	MadDecoder data(nullptr, is);
 	return data.RunScan(handler);

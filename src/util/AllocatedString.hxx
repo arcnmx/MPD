@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2019 Max Kellermann <max.kellermann@gmail.com>
+ * Copyright 2015-2020 Max Kellermann <max.kellermann@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -33,6 +33,8 @@
 #include "StringPointer.hxx"
 
 #include <algorithm>
+#include <cstddef>
+#include <string_view>
 
 /**
  * A string pointer whose memory is managed by this class.
@@ -42,36 +44,38 @@
 template<typename T=char>
 class AllocatedString {
 public:
-	typedef typename StringPointer<T>::value_type value_type;
-	typedef typename StringPointer<T>::reference_type reference_type;
-	typedef typename StringPointer<T>::const_reference_type const_reference_type;
-	typedef typename StringPointer<T>::pointer_type pointer_type;
-	typedef typename StringPointer<T>::const_pointer_type const_pointer_type;
-	typedef size_t size_type;
+	using value_type = typename StringPointer<T>::value_type;
+	using reference = typename StringPointer<T>::reference;
+	using const_reference = typename StringPointer<T>::const_reference;
+	using pointer = typename StringPointer<T>::pointer;
+	using const_pointer = typename StringPointer<T>::const_pointer;
+	using string_view = std::basic_string_view<T>;
+	using size_type = std::size_t;
 
 	static constexpr value_type SENTINEL = '\0';
 
 private:
-	pointer_type value;
+	pointer value;
 
-	explicit AllocatedString(pointer_type _value)
+	explicit AllocatedString(pointer _value) noexcept
 		:value(_value) {}
 
 public:
-	AllocatedString(std::nullptr_t n):value(n) {}
+	AllocatedString(std::nullptr_t n) noexcept
+		:value(n) {}
 
-	AllocatedString(AllocatedString &&src)
+	AllocatedString(AllocatedString &&src) noexcept
 		:value(src.Steal()) {}
 
-	~AllocatedString() {
+	~AllocatedString() noexcept {
 		delete[] value;
 	}
 
-	static AllocatedString Donate(pointer_type value) {
+	static AllocatedString Donate(pointer value) noexcept {
 		return AllocatedString(value);
 	}
 
-	static AllocatedString Null() {
+	static AllocatedString Null() noexcept {
 		return nullptr;
 	}
 
@@ -81,67 +85,59 @@ public:
 		return Donate(p);
 	}
 
-	static AllocatedString Duplicate(const_pointer_type src);
-
-	static AllocatedString Duplicate(const_pointer_type begin,
-					 const_pointer_type end) {
-		auto p = new value_type[end - begin + 1];
-		*std::copy(begin, end, p) = SENTINEL;
+	static AllocatedString Duplicate(string_view src) {
+		auto p = new value_type[src.size() + 1];
+		*std::copy_n(src.data(), src.size(), p) = SENTINEL;
 		return Donate(p);
 	}
 
-	static AllocatedString Duplicate(const_pointer_type begin,
-					 size_type length) {
-		auto p = new value_type[length + 1];
-		*std::copy_n(begin, length, p) = SENTINEL;
-		return Donate(p);
-	}
-
-	AllocatedString &operator=(AllocatedString &&src) {
+	AllocatedString &operator=(AllocatedString &&src) noexcept {
 		std::swap(value, src.value);
 		return *this;
 	}
 
-	constexpr bool operator==(std::nullptr_t) const {
+	constexpr bool operator==(std::nullptr_t) const noexcept {
 		return value == nullptr;
 	}
 
-	constexpr bool operator!=(std::nullptr_t) const {
+	constexpr bool operator!=(std::nullptr_t) const noexcept {
 		return value != nullptr;
 	}
 
-	constexpr bool IsNull() const {
+	constexpr bool IsNull() const noexcept {
 		return value == nullptr;
 	}
 
-	constexpr const_pointer_type c_str() const {
+	operator string_view() const noexcept {
 		return value;
 	}
 
-	bool empty() const {
+	constexpr const_pointer c_str() const noexcept {
+		return value;
+	}
+
+	bool empty() const noexcept {
 		return *value == SENTINEL;
 	}
 
-	constexpr pointer_type data() const {
+	constexpr pointer data() const noexcept {
 		return value;
 	}
 
-	reference_type operator[](size_type i) {
+	reference operator[](size_type i) noexcept {
 		return value[i];
 	}
 
-	const reference_type operator[](size_type i) const {
+	const reference operator[](size_type i) const noexcept {
 		return value[i];
 	}
 
-	pointer_type Steal() {
-		pointer_type result = value;
-		value = nullptr;
-		return result;
+	pointer Steal() noexcept {
+		return std::exchange(value, nullptr);
 	}
 
 	AllocatedString Clone() const {
-		return Duplicate(c_str());
+		return Duplicate(*this);
 	}
 };
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -68,6 +68,8 @@ ChromaprintDecoderClient::SubmitData(InputStream *,
 				     const void *_data, size_t length,
 				     uint16_t) noexcept
 {
+	assert(ready);
+
 	if (length > remaining_bytes)
 		remaining_bytes = 0;
 	else

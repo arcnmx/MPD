@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -44,6 +44,11 @@ ToNeighborInfo(const UDisks2::Object &o) noexcept
 {
 	return {o.GetUri(), o.path};
 }
+
+static constexpr char udisks_neighbor_match[] =
+	"type='signal',sender='" UDISKS2_INTERFACE "',"
+	"interface='" DBUS_OM_INTERFACE "',"
+	"path='" UDISKS2_PATH "'";
 
 class UdisksNeighborExplorer final
 	: public NeighborExplorer {
@@ -106,26 +111,37 @@ UdisksNeighborExplorer::DoOpen()
 
 	auto &connection = GetConnection();
 
+	/* this ugly try/catch cascade is only here because this
+	   method has no RAII for this method - TODO: improve this */
 	try {
 		Error error;
-		dbus_bus_add_match(connection,
-				   "type='signal',sender='" UDISKS2_INTERFACE "',"
-				   "interface='" DBUS_OM_INTERFACE "',"
-				   "path='" UDISKS2_PATH "'",
-				   error);
+		dbus_bus_add_match(connection, udisks_neighbor_match, error);
 		error.CheckThrow("DBus AddMatch error");
 
-		dbus_connection_add_filter(connection,
-					   HandleMessage, this,
-					   nullptr);
+		try {
+			dbus_connection_add_filter(connection,
+						   HandleMessage, this,
+						   nullptr);
 
-		auto msg = Message::NewMethodCall(UDISKS2_INTERFACE,
-						  UDISKS2_PATH,
-						  DBUS_OM_INTERFACE,
-						  "GetManagedObjects");
-		list_request.Send(connection, *msg.Get(),
-				  std::bind(&UdisksNeighborExplorer::OnListNotify,
-					    this, std::placeholders::_1));
+			try {
+				auto msg = Message::NewMethodCall(UDISKS2_INTERFACE,
+								  UDISKS2_PATH,
+								  DBUS_OM_INTERFACE,
+								  "GetManagedObjects");
+				list_request.Send(connection, *msg.Get(),
+						  std::bind(&UdisksNeighborExplorer::OnListNotify,
+							    this, std::placeholders::_1));
+			} catch (...) {
+				dbus_connection_remove_filter(connection,
+							      HandleMessage,
+							      this);
+				throw;
+			}
+		} catch (...) {
+			dbus_bus_remove_match(connection,
+					      udisks_neighbor_match, nullptr);
+			throw;
+		}
 	} catch (...) {
 		dbus_glue.Destruct();
 		throw;
@@ -145,8 +161,10 @@ UdisksNeighborExplorer::DoClose() noexcept
 		list_request.Cancel();
 	}
 
-	// TODO: remove_match
-	// TODO: remove_filter
+	auto &connection = GetConnection();
+
+	dbus_connection_remove_filter(connection, HandleMessage, this);
+	dbus_bus_remove_match(connection, udisks_neighbor_match, nullptr);
 
 	dbus_glue.Destruct();
 }
@@ -231,7 +249,7 @@ UdisksNeighborExplorer::HandleMessage(DBusConnection *, DBusMessage *message) no
 	    dbus_message_has_signature(message, InterfacesAddedType::value)) {
 		RecurseInterfaceDictEntry(ReadMessageIter(*message), [this](const char *path, auto &&i){
 				UDisks2::Object o(path);
-				UDisks2::ParseObject(o, std::move(i));
+				UDisks2::ParseObject(o, std::forward<decltype(i)>(i));
 				if (o.IsValid())
 					this->Insert(std::move(o));
 			});
@@ -259,7 +277,7 @@ UdisksNeighborExplorer::HandleMessage(DBusConnection *connection,
 static std::unique_ptr<NeighborExplorer>
 udisks_neighbor_create(EventLoop &event_loop,
 		     NeighborListener &listener,
-		     gcc_unused const ConfigBlock &block)
+		     [[maybe_unused]] const ConfigBlock &block)
 {
 	return std::make_unique<UdisksNeighborExplorer>(event_loop, listener);
 }

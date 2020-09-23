@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,7 +21,8 @@
 #include "CondHandler.hxx"
 #include "thread/Name.hxx"
 
-#include <assert.h>
+#include <cassert>
+
 #include <string.h>
 
 ThreadInputStream::ThreadInputStream(const char *_plugin,

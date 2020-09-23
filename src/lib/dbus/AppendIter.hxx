@@ -36,6 +36,8 @@
 #include "Iter.hxx"
 #include "Values.hxx"
 
+#include <stdexcept>
+
 namespace ODBus {
 
 class AppendMessageIter : public MessageIter {
@@ -72,6 +74,10 @@ public:
 		return AppendBasic(DBUS_TYPE_UINT32, &value);
 	}
 
+	AppendMessageIter &Append(const uint64_t &value) {
+		return AppendBasic(DBUS_TYPE_UINT64, &value);
+	}
+
 	AppendMessageIter &AppendFixedArray(int element_type,
 					    const void *value,
 					    int n_elements) {
@@ -80,7 +86,7 @@ public:
 			throw std::runtime_error("dbus_message_iter_append_fixed_array() failed");
 
 		return *this;
-	};
+	}
 
 	AppendMessageIter &AppendFixedArray(ConstBuffer<uint32_t> value) {
 		return AppendFixedArray(DBUS_TYPE_UINT32,

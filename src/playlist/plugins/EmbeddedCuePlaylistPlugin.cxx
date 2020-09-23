@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -60,7 +60,6 @@ public:
 
 	std::unique_ptr<CueParser> parser;
 
-public:
 	std::unique_ptr<DetachedSong> NextSong() override;
 };
 
@@ -82,7 +81,7 @@ ExtractCuesheetTagHandler::OnPair(StringView name, StringView value) noexcept
 
 static std::unique_ptr<SongEnumerator>
 embcue_playlist_open_uri(const char *uri,
-			 gcc_unused Mutex &mutex)
+			 [[maybe_unused]] Mutex &mutex)
 {
 	if (!PathTraitsUTF8::IsAbsolute(uri))
 		/* only local files supported */

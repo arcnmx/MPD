@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -19,7 +19,7 @@
 
 #include "FlacEncoderPlugin.hxx"
 #include "../EncoderAPI.hxx"
-#include "AudioFormat.hxx"
+#include "pcm/AudioFormat.hxx"
 #include "pcm/Buffer.hxx"
 #include "util/DynamicFifoBuffer.hxx"
 #include "util/RuntimeError.hxx"
@@ -69,8 +69,8 @@ private:
 	static FLAC__StreamEncoderWriteStatus WriteCallback(const FLAC__StreamEncoder *,
 							    const FLAC__byte data[],
 							    size_t bytes,
-							    gcc_unused unsigned samples,
-							    gcc_unused unsigned current_frame,
+							    [[maybe_unused]] unsigned samples,
+							    [[maybe_unused]] unsigned current_frame,
 							    void *client_data) noexcept {
 		auto &encoder = *(FlacEncoder *)client_data;
 		encoder.output_buffer.Append((const uint8_t *)data, bytes);
@@ -82,18 +82,18 @@ class PreparedFlacEncoder final : public PreparedEncoder {
 	const unsigned compression;
 
 public:
-	PreparedFlacEncoder(const ConfigBlock &block);
+	explicit PreparedFlacEncoder(const ConfigBlock &block);
 
 	/* virtual methods from class PreparedEncoder */
 	Encoder *Open(AudioFormat &audio_format) override;
 
-	const char *GetMimeType() const noexcept override {
+	[[nodiscard]] const char *GetMimeType() const noexcept override {
 		return  "audio/flac";
 	}
 };
 
 PreparedFlacEncoder::PreparedFlacEncoder(const ConfigBlock &block)
-	:compression(block.GetBlockValue("compression", 5u))
+	:compression(block.GetBlockValue("compression", 5U))
 {
 }
 

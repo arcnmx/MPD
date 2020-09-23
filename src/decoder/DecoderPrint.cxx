@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,9 +22,8 @@
 #include "DecoderPlugin.hxx"
 #include "client/Response.hxx"
 
+#include <cassert>
 #include <functional>
-
-#include <assert.h>
 
 static void
 decoder_plugin_print(Response &r,
@@ -48,7 +47,7 @@ decoder_plugin_print(Response &r,
 void
 decoder_list_print(Response &r)
 {
-	using namespace std::placeholders;
-	const auto f = std::bind(decoder_plugin_print, std::ref(r), _1);
+	const auto f = [&](const auto &plugin)
+		{ return decoder_plugin_print(r, plugin); };
 	decoder_plugins_for_each_enabled(f);
 }

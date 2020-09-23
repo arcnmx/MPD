@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -31,11 +31,11 @@
 #include <map>
 
 struct SearchStats {
-	unsigned n_songs;
+	unsigned n_songs{0};
 	std::chrono::duration<std::uint64_t, SongTime::period> total_duration;
 
 	constexpr SearchStats()
-		:n_songs(0), total_duration(0) {}
+		: total_duration(0) {}
 };
 
 class TagCountMap : public std::map<std::string, SearchStats> {
@@ -89,10 +89,8 @@ GroupCountVisitor(TagCountMap &map, TagType group,
 		  const LightSong &song) noexcept
 {
 	const Tag &tag = song.tag;
-	VisitTagWithFallbackOrEmpty(tag, group,
-				    std::bind(CollectGroupCounts, std::ref(map),
-					      std::cref(tag),
-					      std::placeholders::_1));
+	VisitTagWithFallbackOrEmpty(tag, group, [&](const auto &val)
+		{ return CollectGroupCounts(map, tag, val);  });
 }
 
 void
@@ -109,9 +107,9 @@ PrintSongCount(Response &r, const Partition &partition, const char *name,
 
 		SearchStats stats;
 
-		using namespace std::placeholders;
-		const auto f = std::bind(stats_visitor_song, std::ref(stats),
-					 _1);
+		const auto f = [&](const auto &song)
+			{ return stats_visitor_song(stats, song); };
+
 		db.Visit(selection, f);
 
 		PrintSearchStats(r, stats);
@@ -121,9 +119,9 @@ PrintSongCount(Response &r, const Partition &partition, const char *name,
 
 		TagCountMap map;
 
-		using namespace std::placeholders;
-		const auto f = std::bind(GroupCountVisitor, std::ref(map),
-					 group, _1);
+		const auto f = [&map,group](const auto &song)
+			{ return GroupCountVisitor(map, group, song); };
+
 		db.Visit(selection, f);
 
 		Print(r, group, map);

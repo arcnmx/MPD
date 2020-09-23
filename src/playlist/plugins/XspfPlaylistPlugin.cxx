@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,6 +23,7 @@
 #include "song/DetachedSong.hxx"
 #include "input/InputStream.hxx"
 #include "tag/Builder.hxx"
+#include "tag/Table.hxx"
 #include "util/StringView.hxx"
 #include "lib/expat/ExpatParser.hxx"
 
@@ -43,8 +44,8 @@ struct XspfParser {
 	 */
 	enum {
 		ROOT, PLAYLIST, TRACKLIST, TRACK,
-		LOCATION,
-	} state;
+		TAG, LOCATION,
+	} state = ROOT;
 
 	/**
 	 * The current tag within the "track" element.  This is only
@@ -60,15 +61,28 @@ struct XspfParser {
 
 	TagBuilder tag_builder;
 
-	XspfParser()
-		:state(ROOT) {}
+	std::string value;
+};
+
+static constexpr struct tag_table xspf_tag_elements[] = {
+	{ "title", TAG_TITLE },
+
+	/* TAG_COMPOSER would be more correct according to the XSPF
+	   spec */
+	{ "creator", TAG_ARTIST },
+
+	{ "annotation", TAG_COMMENT },
+	{ "album", TAG_ALBUM },
+	{ "trackNum", TAG_TRACK },
+	{ nullptr, TAG_NUM_OF_ITEM_TYPES }
 };
 
 static void XMLCALL
 xspf_start_element(void *user_data, const XML_Char *element_name,
-		   gcc_unused const XML_Char **atts)
+		   [[maybe_unused]] const XML_Char **atts)
 {
-	XspfParser *parser = (XspfParser *)user_data;
+	auto *parser = (XspfParser *)user_data;
+	parser->value.clear();
 
 	switch (parser->state) {
 	case XspfParser::ROOT:
@@ -87,7 +101,6 @@ xspf_start_element(void *user_data, const XML_Char *element_name,
 		if (strcmp(element_name, "track") == 0) {
 			parser->state = XspfParser::TRACK;
 			parser->location.clear();
-			parser->tag_type = TAG_NUM_OF_ITEM_TYPES;
 		}
 
 		break;
@@ -95,21 +108,16 @@ xspf_start_element(void *user_data, const XML_Char *element_name,
 	case XspfParser::TRACK:
 		if (strcmp(element_name, "location") == 0)
 			parser->state = XspfParser::LOCATION;
-		else if (strcmp(element_name, "title") == 0)
-			parser->tag_type = TAG_TITLE;
-		else if (strcmp(element_name, "creator") == 0)
-			/* TAG_COMPOSER would be more correct
-			   according to the XSPF spec */
-			parser->tag_type = TAG_ARTIST;
-		else if (strcmp(element_name, "annotation") == 0)
-			parser->tag_type = TAG_COMMENT;
-		else if (strcmp(element_name, "album") == 0)
-			parser->tag_type = TAG_ALBUM;
-		else if (strcmp(element_name, "trackNum") == 0)
-			parser->tag_type = TAG_TRACK;
+		else if (!parser->location.empty()) {
+			parser->tag_type = tag_table_lookup(xspf_tag_elements,
+							    element_name);
+			if (parser->tag_type != TAG_NUM_OF_ITEM_TYPES)
+				parser->state = XspfParser::TAG;
+		}
 
 		break;
 
+	case XspfParser::TAG:
 	case XspfParser::LOCATION:
 		break;
 	}
@@ -118,7 +126,7 @@ xspf_start_element(void *user_data, const XML_Char *element_name,
 static void XMLCALL
 xspf_end_element(void *user_data, const XML_Char *element_name)
 {
-	XspfParser *parser = (XspfParser *)user_data;
+	auto *parser = (XspfParser *)user_data;
 
 	switch (parser->state) {
 	case XspfParser::ROOT:
@@ -143,39 +151,43 @@ xspf_end_element(void *user_data, const XML_Char *element_name)
 							    parser->tag_builder.Commit());
 
 			parser->state = XspfParser::TRACKLIST;
-		} else
-			parser->tag_type = TAG_NUM_OF_ITEM_TYPES;
+		}
 
+		break;
+
+	case XspfParser::TAG:
+		if (!parser->value.empty())
+			parser->tag_builder.AddItem(parser->tag_type,
+						    StringView(parser->value.data(),
+							       parser->value.length()));
+
+		parser->state = XspfParser::TRACK;
 		break;
 
 	case XspfParser::LOCATION:
+		parser->location = std::move(parser->value);
 		parser->state = XspfParser::TRACK;
 		break;
 	}
+
+	parser->value.clear();
 }
 
 static void XMLCALL
 xspf_char_data(void *user_data, const XML_Char *s, int len)
 {
-	XspfParser *parser = (XspfParser *)user_data;
+	auto *parser = (XspfParser *)user_data;
 
 	switch (parser->state) {
 	case XspfParser::ROOT:
 	case XspfParser::PLAYLIST:
 	case XspfParser::TRACKLIST:
-		break;
-
 	case XspfParser::TRACK:
-		if (!parser->location.empty() &&
-		    parser->tag_type != TAG_NUM_OF_ITEM_TYPES)
-			parser->tag_builder.AddItem(parser->tag_type,
-						    StringView(s, len));
-
 		break;
 
+	case XspfParser::TAG:
 	case XspfParser::LOCATION:
-		parser->location.assign(s, len);
-
+		parser->value.append(s, len);
 		break;
 	}
 }

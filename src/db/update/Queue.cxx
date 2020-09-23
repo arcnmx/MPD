@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,7 +21,7 @@
 
 bool
 UpdateQueue::Push(SimpleDatabase &db, Storage &storage,
-		  const char *path, bool discard, unsigned id) noexcept
+		  std::string_view path, bool discard, unsigned id) noexcept
 {
 	if (update_queue.size() >= MAX_UPDATE_QUEUE_SIZE)
 		return false;

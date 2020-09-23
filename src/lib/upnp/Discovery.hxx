@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -29,18 +29,12 @@
 #include "thread/Mutex.hxx"
 #include "event/DeferEvent.hxx"
 
-#include <upnp.h>
-
 #include <boost/intrusive/list.hpp>
 
 #include <list>
 #include <vector>
 #include <string>
 #include <chrono>
-
-#if UPNP_VERSION < 10800
-#define UpnpDiscovery Upnp_Discovery
-#endif
 
 class ContentDirectoryService;
 
@@ -176,7 +170,7 @@ public:
 	/**
 	 * Get server by friendly name.
 	 */
-	ContentDirectoryService GetServer(const char *friendly_name);
+	ContentDirectoryService GetServer(std::string_view friendly_name);
 
 private:
 	void Search();

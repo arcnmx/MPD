@@ -81,7 +81,7 @@ FileOutputStream::Open()
 #ifdef _WIN32
 
 inline void
-FileOutputStream::OpenCreate(gcc_unused bool visible)
+FileOutputStream::OpenCreate([[maybe_unused]] bool visible)
 {
 	handle = CreateFile(path.c_str(), GENERIC_WRITE, 0, nullptr,
 			    CREATE_ALWAYS,
@@ -158,9 +158,10 @@ FileOutputStream::Cancel() noexcept
 
 #else
 
+#include <cerrno>
+
 #include <fcntl.h>
 #include <unistd.h>
-#include <errno.h>
 
 #ifdef HAVE_O_TMPFILE
 #ifndef O_TMPFILE
@@ -269,12 +270,7 @@ FileOutputStream::Commit()
 #endif
 
 	if (!Close()) {
-#ifdef _WIN32
-		throw FormatLastError("Failed to commit %s",
-				      path.ToUTF8().c_str());
-#else
 		throw FormatErrno("Failed to commit %s", path.c_str());
-#endif
 	}
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -31,14 +31,13 @@
 #endif
 
 #include <algorithm>
-
-#include <assert.h>
+#include <cassert>
 
 #ifdef HAVE_FS_CHARSET
 
 static std::string fs_charset;
 
-static IcuConverter *fs_converter;
+static std::unique_ptr<IcuConverter> fs_converter;
 
 void
 SetFSCharset(const char *charset)
@@ -59,8 +58,7 @@ void
 DeinitFSCharset() noexcept
 {
 #ifdef HAVE_ICU_CONVERTER
-	delete fs_converter;
-	fs_converter = nullptr;
+	fs_converter.reset();
 #endif
 }
 
@@ -76,32 +74,29 @@ GetFSCharset() noexcept
 #endif
 }
 
-static inline PathTraitsUTF8::string &&
-FixSeparators(PathTraitsUTF8::string &&s)
+static inline PathTraitsUTF8::string
+FixSeparators(const PathTraitsUTF8::string_view _s)
 {
 	// For whatever reason GCC can't convert constexpr to value reference.
 	// This leads to link errors when passing separators directly.
 	auto to = PathTraitsUTF8::SEPARATOR;
 	decltype(to) from = PathTraitsFS::SEPARATOR;
 
+	PathTraitsUTF8::string s(_s);
+
 	if (from != to)
 		/* convert backslash to slash on WIN32 */
 		std::replace(s.begin(), s.end(), from, to);
 
-	return std::move(s);
+	return s;
 }
 
 PathTraitsUTF8::string
-PathToUTF8(PathTraitsFS::const_pointer_type path_fs)
+PathToUTF8(PathTraitsFS::string_view path_fs)
 {
-#if !CLANG_CHECK_VERSION(3,6)
-	/* disabled on clang due to -Wtautological-pointer-compare */
-	assert(path_fs != nullptr);
-#endif
-
 #ifdef _WIN32
 	const auto buffer = WideCharToMultiByte(CP_UTF8, path_fs);
-	return FixSeparators(PathTraitsUTF8::string(buffer.c_str()));
+	return FixSeparators(buffer);
 #else
 #ifdef HAVE_FS_CHARSET
 	if (fs_converter == nullptr)
@@ -110,7 +105,7 @@ PathToUTF8(PathTraitsFS::const_pointer_type path_fs)
 #ifdef HAVE_FS_CHARSET
 
 	const auto buffer = fs_converter->ToUTF8(path_fs);
-	return FixSeparators(PathTraitsUTF8::string(buffer.c_str()));
+	return FixSeparators(buffer);
 #endif
 #endif
 }
@@ -118,22 +113,17 @@ PathToUTF8(PathTraitsFS::const_pointer_type path_fs)
 #if defined(HAVE_FS_CHARSET) || defined(_WIN32)
 
 PathTraitsFS::string
-PathFromUTF8(PathTraitsUTF8::const_pointer_type path_utf8)
+PathFromUTF8(PathTraitsUTF8::string_view path_utf8)
 {
-#if !CLANG_CHECK_VERSION(3,6)
-	/* disabled on clang due to -Wtautological-pointer-compare */
-	assert(path_utf8 != nullptr);
-#endif
-
 #ifdef _WIN32
 	const auto buffer = MultiByteToWideChar(CP_UTF8, path_utf8);
-	return PathTraitsFS::string(buffer.c_str());
+	return PathTraitsFS::string(buffer);
 #else
 	if (fs_converter == nullptr)
-		return path_utf8;
+		return PathTraitsFS::string(path_utf8);
 
 	const auto buffer = fs_converter->FromUTF8(path_utf8);
-	return PathTraitsFS::string(buffer.c_str());
+	return PathTraitsFS::string(buffer);
 #endif
 }
 

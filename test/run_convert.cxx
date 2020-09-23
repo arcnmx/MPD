@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,37 +23,94 @@
  *
  */
 
-#include "AudioParser.hxx"
-#include "AudioFormat.hxx"
+#include "ConfigGlue.hxx"
+#include "pcm/AudioParser.hxx"
+#include "pcm/AudioFormat.hxx"
 #include "pcm/Convert.hxx"
+#include "fs/Path.hxx"
 #include "util/ConstBuffer.hxx"
 #include "util/StaticFifoBuffer.hxx"
+#include "util/OptionDef.hxx"
+#include "util/OptionParser.hxx"
 #include "util/PrintException.hxx"
+#include "Log.hxx"
+#include "LogBackend.hxx"
 
-#include <assert.h>
+#include <cassert>
+#include <stdexcept>
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
 
+struct CommandLine {
+	AudioFormat in_audio_format, out_audio_format;
+
+	Path config_path = nullptr;
+
+	bool verbose = false;
+};
+
+enum Option {
+	OPTION_CONFIG,
+	OPTION_VERBOSE,
+};
+
+static constexpr OptionDef option_defs[] = {
+	{"config", 0, true, "Load a MPD configuration file"},
+	{"verbose", 'v', false, "Verbose logging"},
+};
+
+static CommandLine
+ParseCommandLine(int argc, char **argv)
+{
+	CommandLine c;
+
+	OptionParser option_parser(option_defs, argc, argv);
+	while (auto o = option_parser.Next()) {
+		switch (Option(o.index)) {
+		case OPTION_CONFIG:
+			c.config_path = Path::FromFS(o.value);
+			break;
+
+		case OPTION_VERBOSE:
+			c.verbose = true;
+			break;
+		}
+	}
+
+	auto args = option_parser.GetRemaining();
+	if (args.size != 2)
+		throw std::runtime_error("Usage: run_convert IN_FORMAT OUT_FORMAT <IN >OUT");
+
+	c.in_audio_format = ParseAudioFormat(args[0], false);
+	c.out_audio_format = c.in_audio_format.WithMask(ParseAudioFormat(args[1], false));
+	return c;
+}
+
+class GlobalInit {
+	const ConfigData config;
+
+public:
+	explicit GlobalInit(Path config_path)
+		:config(AutoLoadConfigFile(config_path))
+	{
+		pcm_convert_global_init(config);
+	}
+};
+
 int
 main(int argc, char **argv)
 try {
-	if (argc != 3) {
-		fprintf(stderr,
-			"Usage: run_convert IN_FORMAT OUT_FORMAT <IN >OUT\n");
-		return 1;
-	}
+	const auto c = ParseCommandLine(argc, argv);
 
-	const auto in_audio_format = ParseAudioFormat(argv[1], false);
-	const auto out_audio_format_mask = ParseAudioFormat(argv[2], false);
+	SetLogThreshold(c.verbose ? LogLevel::DEBUG : LogLevel::INFO);
+	const GlobalInit init(c.config_path);
 
-	const auto out_audio_format =
-		in_audio_format.WithMask(out_audio_format_mask);
+	const size_t in_frame_size = c.in_audio_format.GetFrameSize();
 
-	const size_t in_frame_size = in_audio_format.GetFrameSize();
-
-	PcmConvert state(in_audio_format, out_audio_format);
+	PcmConvert state(c.in_audio_format, c.out_audio_format);
 
 	StaticFifoBuffer<uint8_t, 4096> buffer;
 
@@ -80,7 +137,7 @@ try {
 
 		auto output = state.Convert({src.data, src.size});
 
-		gcc_unused ssize_t ignored = write(1, output.data,
+		[[maybe_unused]] ssize_t ignored = write(1, output.data,
 						   output.size);
 	}
 
@@ -89,7 +146,7 @@ try {
 		if (output.IsNull())
 			break;
 
-		gcc_unused ssize_t ignored = write(1, output.data,
+		[[maybe_unused]] ssize_t ignored = write(1, output.data,
 						   output.size);
 	}
 

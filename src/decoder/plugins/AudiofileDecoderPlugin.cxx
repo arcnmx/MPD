@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,7 +20,7 @@
 #include "AudiofileDecoderPlugin.hxx"
 #include "../DecoderAPI.hxx"
 #include "input/InputStream.hxx"
-#include "CheckAudioFormat.hxx"
+#include "pcm/CheckAudioFormat.hxx"
 #include "tag/Handler.hxx"
 #include "util/ScopeExit.hxx"
 #include "util/Domain.hxx"
@@ -29,9 +29,9 @@
 #include <audiofile.h>
 #include <af_vfs.h>
 
+#include <cassert>
 #include <exception>
 
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -129,7 +129,7 @@ audiofile_file_seek(AFvirtualfile *vfile, AFfileoffset _offset,
 static AFvirtualfile *
 setup_virtual_fops(AudioFileInputStream &afis) noexcept
 {
-	AFvirtualfile *vf = (AFvirtualfile *)malloc(sizeof(*vf));
+	auto vf = (AFvirtualfile *)malloc(sizeof(AFvirtualfile));
 	vf->closure = &afis;
 	vf->write = nullptr;
 	vf->read    = audiofile_file_read;
@@ -200,7 +200,7 @@ audiofile_stream_decode(DecoderClient &client, InputStream &is)
 	AudioFileInputStream afis{&client, is};
 	AFvirtualfile *const vf = setup_virtual_fops(afis);
 
-	const AFfilehandle fh = afOpenVirtualFile(vf, "r", nullptr);
+	auto fh = afOpenVirtualFile(vf, "r", nullptr);
 	if (fh == AF_NULL_FILEHANDLE)
 		return;
 
@@ -209,10 +209,10 @@ audiofile_stream_decode(DecoderClient &client, InputStream &is)
 	const auto audio_format = CheckAudioFormat(fh);
 	const auto total_time = audiofile_get_duration(fh);
 
-	const uint16_t kbit_rate = (uint16_t)
+	const auto kbit_rate = (uint16_t)
 		(is.GetSize() * uint64_t(8) / total_time.ToMS());
 
-	const unsigned frame_size = (unsigned)
+	const auto frame_size = (unsigned)
 		afGetVirtualFrameSize(fh, AF_DEFAULT_TRACK, true);
 
 	client.Ready(audio_format, true, total_time);
@@ -241,7 +241,7 @@ audiofile_stream_decode(DecoderClient &client, InputStream &is)
 }
 
 static bool
-audiofile_scan_stream(InputStream &is, TagHandler &handler) noexcept
+audiofile_scan_stream(InputStream &is, TagHandler &handler)
 {
 	if (!is.IsSeekable() || !is.KnownSize())
 		return false;
@@ -269,6 +269,8 @@ static const char *const audiofile_suffixes[] = {
 };
 
 static const char *const audiofile_mime_types[] = {
+	"audio/wav",
+	"audio/aiff",
 	"audio/x-wav",
 	"audio/x-aiff",
 	nullptr

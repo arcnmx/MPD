@@ -1,3 +1,5 @@
+input_features = configuration_data()
+
 input_api = static_library(
   'input_api',
   'Error.cxx',
@@ -40,6 +42,9 @@ input_glue = static_library(
   'cache/Item.cxx',
   'cache/Stream.cxx',
   include_directories: inc,
+  dependencies: [
+    boost_dep,
+  ],
 )
 
 input_glue_dep = declare_dependency(
@@ -51,3 +56,5 @@ input_glue_dep = declare_dependency(
     tag_dep,
   ],
 )
+
+configure_file(output: 'Features.h', configuration: input_features)

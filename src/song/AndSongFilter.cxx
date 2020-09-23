@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,6 +18,8 @@
  */
 
 #include "AndSongFilter.hxx"
+
+#include <algorithm>
 
 ISongFilterPtr
 AndSongFilter::Clone() const noexcept
@@ -54,9 +56,5 @@ AndSongFilter::ToExpression() const noexcept
 bool
 AndSongFilter::Match(const LightSong &song) const noexcept
 {
-	for (const auto &i : items)
-		if (!i->Match(song))
-			return false;
-
-	return true;
+	return std::all_of(items.begin(), items.end(), [&song](const auto &i) { return i->Match(song); });
 }

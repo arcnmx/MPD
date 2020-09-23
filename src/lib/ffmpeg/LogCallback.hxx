@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,9 +20,9 @@
 #ifndef MPD_FFMPEG_LOG_CALLBACK_HXX
 #define MPD_FFMPEG_LOG_CALLBACK_HXX
 
-#include <stdarg.h>
+#include <cstdarg>
 
 void
-FfmpegLogCallback(void *ptr, int level, const char *fmt, va_list vl);
+FfmpegLogCallback(void *ptr, int level, const char *fmt, std::va_list vl);
 
 #endif

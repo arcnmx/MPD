@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,8 +23,7 @@
 #include "song/DetachedSong.hxx"
 
 #include <algorithm>
-
-#include <assert.h>
+#include <cassert>
 
 PlayerControl::PlayerControl(PlayerListener &_listener,
 			     PlayerOutputs &_outputs,

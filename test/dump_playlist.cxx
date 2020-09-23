@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -28,6 +28,7 @@
 #include "playlist/PlaylistRegistry.hxx"
 #include "playlist/PlaylistPlugin.hxx"
 #include "fs/Path.hxx"
+#include "fs/NarrowPath.hxx"
 #include "fs/io/BufferedOutputStream.hxx"
 #include "fs/io/StdioOutputStream.hxx"
 #include "thread/Cond.hxx"
@@ -40,9 +41,9 @@ static void
 tag_save(FILE *file, const Tag &tag)
 {
 	StdioOutputStream sos(file);
-	BufferedOutputStream bos(sos);
-	tag_save(bos, tag);
-	bos.Flush();
+	WithBufferedOutputStream(sos, [&](auto &bos){
+		tag_save(bos, tag);
+	});
 }
 
 int main(int argc, char **argv)
@@ -54,7 +55,7 @@ try {
 		return EXIT_FAILURE;
 	}
 
-	const Path config_path = Path::FromFS(argv[1]);
+	const FromNarrowPath config_path = argv[1];
 	uri = argv[2];
 
 	/* initialize MPD */
@@ -74,7 +75,7 @@ try {
 
 	InputStreamPtr is;
 	auto playlist = playlist_list_open_uri(uri, mutex);
-	if (playlist == NULL) {
+	if (playlist == nullptr) {
 		/* open the stream and wait until it becomes ready */
 
 		is = InputStream::OpenReady(uri, mutex);
@@ -82,7 +83,7 @@ try {
 		/* open the playlist */
 
 		playlist = playlist_list_open_stream(std::move(is), uri);
-		if (playlist == NULL) {
+		if (playlist == nullptr) {
 			fprintf(stderr, "Failed to open playlist\n");
 			return 2;
 		}
@@ -91,7 +92,7 @@ try {
 	/* dump the playlist */
 
 	std::unique_ptr<DetachedSong> song;
-	while ((song = playlist->NextSong()) != NULL) {
+	while ((song = playlist->NextSong()) != nullptr) {
 		printf("%s\n", song->GetURI());
 
 		const unsigned start_ms = song->GetStartTime().ToMS();

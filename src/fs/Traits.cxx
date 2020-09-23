@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -24,75 +24,71 @@
 
 template<typename Traits>
 typename Traits::string
-BuildPathImpl(typename Traits::const_pointer_type a, size_t a_size,
-	      typename Traits::const_pointer_type b, size_t b_size) noexcept
+BuildPathImpl(typename Traits::string_view a,
+	      typename Traits::string_view b) noexcept
 {
-	assert(a != nullptr);
-	assert(b != nullptr);
-
-	if (a_size == 0)
-		return typename Traits::string(b, b_size);
-	if (b_size == 0)
-		return typename Traits::string(a, a_size);
+	if (a.empty())
+		return typename Traits::string(b);
+	if (b.empty())
+		return typename Traits::string(a);
 
 	typename Traits::string result;
-	result.reserve(a_size + 1 + b_size);
+	result.reserve(a.length() + 1 + b.length());
 
-	result.append(a, a_size);
+	result.append(a);
 
-	if (!Traits::IsSeparator(a[a_size - 1]))
+	if (!Traits::IsSeparator(a.back()))
 		result.push_back(Traits::SEPARATOR);
 
-	if (Traits::IsSeparator(b[0]))
-		result.append(b + 1, b_size - 1);
+	if (Traits::IsSeparator(b.front()))
+		result.append(b.substr(1));
 	else
-		result.append(b, b_size);
+		result.append(b);
 
 	return result;
 }
 
 template<typename Traits>
-typename Traits::const_pointer_type
-GetBasePathImpl(typename Traits::const_pointer_type p) noexcept
+typename Traits::const_pointer
+GetBasePathImpl(typename Traits::const_pointer p) noexcept
 {
 #if !CLANG_CHECK_VERSION(3,6)
 	/* disabled on clang due to -Wtautological-pointer-compare */
 	assert(p != nullptr);
 #endif
 
-	typename Traits::const_pointer_type sep = Traits::FindLastSeparator(p);
+	auto sep = Traits::FindLastSeparator(p);
 	return sep != nullptr
 		? sep + 1
 		: p;
 }
 
 template<typename Traits>
-typename Traits::string
-GetParentPathImpl(typename Traits::const_pointer_type p) noexcept
+typename Traits::string_view
+GetParentPathImpl(typename Traits::const_pointer p) noexcept
 {
 #if !CLANG_CHECK_VERSION(3,6)
 	/* disabled on clang due to -Wtautological-pointer-compare */
 	assert(p != nullptr);
 #endif
 
-	typename Traits::const_pointer_type sep = Traits::FindLastSeparator(p);
+	auto sep = Traits::FindLastSeparator(p);
 	if (sep == nullptr)
-		return typename Traits::string(Traits::CURRENT_DIRECTORY);
+		return Traits::CURRENT_DIRECTORY;
 	if (sep == p)
-		return typename Traits::string(p, p + 1);
+		return {p, 1u};
 #ifdef _WIN32
 	if (Traits::IsDrive(p) && sep == p + 2)
-		return typename Traits::string(p, p + 3);
+		return {p, 3u};
 #endif
-	return typename Traits::string(p, sep);
+	return {p, size_t(sep - p)};
 }
 
 template<typename Traits>
-typename Traits::const_pointer_type
-RelativePathImpl(typename Traits::const_pointer_type base,
-		 typename Traits::const_pointer_type other) noexcept
+typename Traits::const_pointer
+RelativePathImpl(typename Traits::string_view base,
+		 typename Traits::const_pointer other) noexcept
 {
-	assert(base != nullptr);
 	assert(other != nullptr);
 
 	other = StringAfterPrefix(other, base);
@@ -102,7 +98,7 @@ RelativePathImpl(typename Traits::const_pointer_type base,
 
 	if (*other != 0) {
 		if (!Traits::IsSeparator(*other)) {
-			if (*base != 0 && Traits::IsSeparator(other[-1]))
+			if (!base.empty() && Traits::IsSeparator(other[-1]))
 				/* "other" has no more slash, but the
 				   matching base ended with a slash:
 				   enough to detect a match */
@@ -121,33 +117,69 @@ RelativePathImpl(typename Traits::const_pointer_type base,
 	return other;
 }
 
-PathTraitsFS::string
-PathTraitsFS::Build(const_pointer_type a, size_t a_size,
-		    const_pointer_type b, size_t b_size) noexcept
+template<typename Traits>
+typename Traits::string_view
+RelativePathImpl(typename Traits::string_view base,
+		 typename Traits::string_view _other) noexcept
 {
-	return BuildPathImpl<PathTraitsFS>(a, a_size, b, b_size);
+	BasicStringView<typename Traits::value_type> other(_other);
+
+	if (!other.SkipPrefix(base))
+		/* mismatch */
+		return {};
+
+	if (!other.empty()) {
+		if (!Traits::IsSeparator(other.front())) {
+			if (!base.empty() && Traits::IsSeparator(other.data[-1]))
+				/* "other" has no more slash, but the
+				   matching base ended with a slash:
+				   enough to detect a match */
+				return other;
+
+			/* mismatch */
+			return {};
+		}
+
+		/* skip remaining path separators */
+		while (!other.empty() && Traits::IsSeparator(other.front()))
+			other.pop_front();
+	}
+
+	return other;
 }
 
-PathTraitsFS::const_pointer_type
-PathTraitsFS::GetBase(PathTraitsFS::const_pointer_type p) noexcept
+PathTraitsFS::string
+PathTraitsFS::Build(string_view a, string_view b) noexcept
+{
+	return BuildPathImpl<PathTraitsFS>(a, b);
+}
+
+PathTraitsFS::const_pointer
+PathTraitsFS::GetBase(PathTraitsFS::const_pointer p) noexcept
 {
 	return GetBasePathImpl<PathTraitsFS>(p);
 }
 
-PathTraitsFS::string
-PathTraitsFS::GetParent(PathTraitsFS::const_pointer_type p) noexcept
+PathTraitsFS::string_view
+PathTraitsFS::GetParent(PathTraitsFS::const_pointer p) noexcept
 {
 	return GetParentPathImpl<PathTraitsFS>(p);
 }
 
-PathTraitsFS::const_pointer_type
-PathTraitsFS::Relative(const_pointer_type base, const_pointer_type other) noexcept
+PathTraitsFS::const_pointer
+PathTraitsFS::Relative(string_view base, const_pointer other) noexcept
+{
+	return RelativePathImpl<PathTraitsFS>(base, other);
+}
+
+PathTraitsFS::string_view
+PathTraitsFS::Relative(string_view base, string_view other) noexcept
 {
 	return RelativePathImpl<PathTraitsFS>(base, other);
 }
 
 PathTraitsFS::string
-PathTraitsFS::Apply(const_pointer_type base, const_pointer_type path) noexcept
+PathTraitsFS::Apply(const_pointer base, const_pointer path) noexcept
 {
 	// TODO: support the Windows syntax (absolute path with or without drive, drive with relative path)
 
@@ -161,27 +193,31 @@ PathTraitsFS::Apply(const_pointer_type base, const_pointer_type path) noexcept
 }
 
 PathTraitsUTF8::string
-PathTraitsUTF8::Build(const_pointer_type a, size_t a_size,
-		      const_pointer_type b, size_t b_size) noexcept
+PathTraitsUTF8::Build(string_view a, string_view b) noexcept
 {
-	return BuildPathImpl<PathTraitsUTF8>(a, a_size, b, b_size);
+	return BuildPathImpl<PathTraitsUTF8>(a, b);
 }
 
-PathTraitsUTF8::const_pointer_type
-PathTraitsUTF8::GetBase(const_pointer_type p) noexcept
+PathTraitsUTF8::const_pointer
+PathTraitsUTF8::GetBase(const_pointer p) noexcept
 {
 	return GetBasePathImpl<PathTraitsUTF8>(p);
 }
 
-PathTraitsUTF8::string
-PathTraitsUTF8::GetParent(const_pointer_type p) noexcept
+PathTraitsUTF8::string_view
+PathTraitsUTF8::GetParent(const_pointer p) noexcept
 {
 	return GetParentPathImpl<PathTraitsUTF8>(p);
 }
 
-PathTraitsUTF8::const_pointer_type
-PathTraitsUTF8::Relative(const_pointer_type base,
-			 const_pointer_type other) noexcept
+PathTraitsUTF8::const_pointer
+PathTraitsUTF8::Relative(string_view base, const_pointer other) noexcept
+{
+	return RelativePathImpl<PathTraitsUTF8>(base, other);
+}
+
+PathTraitsUTF8::string_view
+PathTraitsUTF8::Relative(string_view base, string_view other) noexcept
 {
 	return RelativePathImpl<PathTraitsUTF8>(base, other);
 }

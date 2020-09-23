@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -59,7 +59,7 @@ public:
 	 *
 	 * @return true if the database was modified
 	 */
-	bool DeleteNameIn(Directory &parent, const char *name);
+	bool DeleteNameIn(Directory &parent, std::string_view name);
 
 private:
 	void ClearDirectory(Directory &directory);

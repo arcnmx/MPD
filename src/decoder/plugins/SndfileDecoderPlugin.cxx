@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,7 +20,7 @@
 #include "SndfileDecoderPlugin.hxx"
 #include "../DecoderAPI.hxx"
 #include "input/InputStream.hxx"
-#include "CheckAudioFormat.hxx"
+#include "pcm/CheckAudioFormat.hxx"
 #include "tag/Handler.hxx"
 #include "util/Domain.hxx"
 #include "util/ScopeExit.hxx"
@@ -34,7 +34,7 @@
 static constexpr Domain sndfile_domain("sndfile");
 
 static bool
-sndfile_init(gcc_unused const ConfigBlock &block)
+sndfile_init([[maybe_unused]] const ConfigBlock &block)
 {
        LogDebug(sndfile_domain, sf_version_string());
        return true;
@@ -47,17 +47,15 @@ struct SndfileInputStream {
 	size_t Read(void *buffer, size_t size) {
 		/* libsndfile chokes on partial reads; therefore
 		   always force full reads */
-		return decoder_read_full(client, is, buffer, size)
-			? size
-			: 0;
+		return decoder_read_much(client, is, buffer, size);
 	}
 };
 
 static sf_count_t
 sndfile_vio_get_filelen(void *user_data)
 {
-	SndfileInputStream &sis = *(SndfileInputStream *)user_data;
-	const InputStream &is = sis.is;
+	const auto &sis = *(SndfileInputStream *)user_data;
+	const auto &is = sis.is;
 
 	if (!is.KnownSize())
 		return -1;
@@ -109,9 +107,9 @@ sndfile_vio_read(void *ptr, sf_count_t count, void *user_data)
 }
 
 static sf_count_t
-sndfile_vio_write(gcc_unused const void *ptr,
-		  gcc_unused sf_count_t count,
-		  gcc_unused void *user_data)
+sndfile_vio_write([[maybe_unused]] const void *ptr,
+		  [[maybe_unused]] sf_count_t count,
+		  [[maybe_unused]] void *user_data)
 {
 	/* no writing! */
 	return -1;
@@ -120,8 +118,8 @@ sndfile_vio_write(gcc_unused const void *ptr,
 static sf_count_t
 sndfile_vio_tell(void *user_data)
 {
-	SndfileInputStream &sis = *(SndfileInputStream *)user_data;
-	const InputStream &is = sis.is;
+	const auto &sis = *(SndfileInputStream *)user_data;
+	const auto &is = sis.is;
 
 	return is.GetOffset();
 }
@@ -268,7 +266,7 @@ static constexpr struct {
 };
 
 static bool
-sndfile_scan_stream(InputStream &is, TagHandler &handler) noexcept
+sndfile_scan_stream(InputStream &is, TagHandler &handler)
 {
 	SF_INFO info;
 
@@ -323,6 +321,8 @@ static const char *const sndfile_suffixes[] = {
 };
 
 static const char *const sndfile_mime_types[] = {
+	"audio/wav",
+	"audio/aiff",
 	"audio/x-wav",
 	"audio/x-aiff",
 

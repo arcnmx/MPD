@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,8 +23,8 @@
 #include "protocol/Ack.hxx"
 #include "util/Compiler.h"
 
-#include <stddef.h>
-#include <stdarg.h>
+#include <cstdarg>
+#include <cstddef>
 
 template<typename T> struct ConstBuffer;
 class Client;
@@ -74,7 +74,7 @@ public:
 
 	bool Write(const void *data, size_t length) noexcept;
 	bool Write(const char *data) noexcept;
-	bool FormatV(const char *fmt, va_list args) noexcept;
+	bool FormatV(const char *fmt, std::va_list args) noexcept;
 	bool Format(const char *fmt, ...) noexcept;
 
 	static constexpr size_t MAX_BINARY_SIZE = 8192;

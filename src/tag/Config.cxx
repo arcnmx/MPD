@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -25,6 +25,7 @@
 #include "util/ASCII.hxx"
 #include "util/RuntimeError.hxx"
 #include "util/SplitString.hxx"
+#include "util/StringView.hxx"
 
 void
 TagLoadConfig(const ConfigData &config)
@@ -44,15 +45,11 @@ TagLoadConfig(const ConfigData &config)
 		/* no "+-": not incremental */
 		global_tag_mask = TagMask::None();
 
-	for (const auto &i : SplitString(value, ',')) {
-		const char *name = i.c_str();
-
-		if (*name == '+') {
+	for (StringView name : SplitString(value, ',')) {
+		if (name.SkipPrefix("+")) {
 			plus = true;
-			++name;
-		} else if (*name == '-') {
+		} else if (name.SkipPrefix("-")) {
 			plus = false;
-			++name;
 		}
 
 		const auto type = tag_name_parse_i(name);

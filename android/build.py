@@ -25,25 +25,32 @@ android_abis = {
         'arch': 'arm-linux-androideabi',
         'ndk_arch': 'arm',
         'toolchain_arch': 'arm-linux-androideabi',
-        'llvm_triple': 'armv7-none-linux-androideabi',
-        'cflags': '-march=armv7-a -mfpu=vfp -mfloat-abi=softfp',
+        'llvm_triple': 'armv7-linux-androideabi',
+        'cflags': '-fpic -march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=softfp',
     },
 
     'arm64-v8a': {
-        'android_api_level': '21',
         'arch': 'aarch64-linux-android',
         'ndk_arch': 'arm64',
         'toolchain_arch': 'aarch64-linux-android',
-        'llvm_triple': 'aarch64-none-linux-android',
-        'cflags': '',
+        'llvm_triple': 'aarch64-linux-android',
+        'cflags': '-fpic',
     },
 
     'x86': {
         'arch': 'i686-linux-android',
         'ndk_arch': 'x86',
         'toolchain_arch': 'x86',
-        'llvm_triple': 'i686-none-linux-android',
-        'cflags': '-march=i686 -mtune=intel -mssse3 -mfpmath=sse -m32',
+        'llvm_triple': 'i686-linux-android',
+        'cflags': '-fPIC -march=i686 -mtune=intel -mssse3 -mfpmath=sse -m32',
+    },
+
+    'x86_64': {
+        'arch': 'x86_64-linux-android',
+        'ndk_arch': 'x86_64',
+        'toolchain_arch': 'x86_64',
+        'llvm_triple': 'x86_64-linux-android',
+        'cflags': '-fPIC -m64',
     },
 }
 
@@ -76,27 +83,20 @@ class AndroidNdkToolchain:
 
         ndk_arch = abi_info['ndk_arch']
         android_api_level = '21'
-        ndk_platform = 'android-' + android_api_level
 
         # select the NDK compiler
         gcc_version = '4.9'
-
-        ndk_platform_path = os.path.join(ndk_path, 'platforms', ndk_platform)
-        sysroot = os.path.join(ndk_path, 'sysroot')
-        target_root = os.path.join(ndk_platform_path, 'arch-' + ndk_arch)
 
         install_prefix = os.path.join(arch_path, 'root')
 
         self.arch = arch
         self.install_prefix = install_prefix
-        self.sysroot = sysroot
 
         toolchain_path = os.path.join(ndk_path, 'toolchains', abi_info['toolchain_arch'] + '-' + gcc_version, 'prebuilt', build_arch)
         llvm_path = os.path.join(ndk_path, 'toolchains', 'llvm', 'prebuilt', build_arch)
-        llvm_triple = abi_info['llvm_triple']
+        llvm_triple = abi_info['llvm_triple'] + android_api_level
 
         common_flags = '-Os -g'
-        common_flags += ' -fPIC'
         common_flags += ' ' + abi_info['cflags']
 
         toolchain_bin = os.path.join(toolchain_path, 'bin')
@@ -107,6 +107,9 @@ class AndroidNdkToolchain:
 
         common_flags += ' -fvisibility=hidden -fdata-sections -ffunction-sections'
 
+        # required flags from https://android.googlesource.com/platform/ndk/+/ndk-release-r20/docs/BuildSystemMaintainers.md#additional-required-arguments
+        common_flags += ' -fno-addrsig'
+
         self.ar = os.path.join(toolchain_bin, arch + '-ar')
         self.ranlib = os.path.join(toolchain_bin, arch + '-ranlib')
         self.nm = os.path.join(toolchain_bin, arch + '-nm')
@@ -114,15 +117,11 @@ class AndroidNdkToolchain:
 
         self.cflags = common_flags
         self.cxxflags = common_flags
-        self.cppflags = '--sysroot=' + sysroot + \
-            ' -isystem ' + os.path.join(install_prefix, 'include') + \
-            ' -isystem ' + os.path.join(sysroot, 'usr', 'include', arch) + \
-            ' -D__ANDROID_API__=' + android_api_level
-        self.ldflags = '--sysroot=' + sysroot + \
-            ' -L' + os.path.join(install_prefix, 'lib') + \
-            ' -L' + os.path.join(target_root, 'usr', 'lib') + \
-            ' -B' + os.path.join(target_root, 'usr', 'lib') + \
+        self.cppflags = ' -isystem ' + os.path.join(install_prefix, 'include')
+        self.ldflags = ' -L' + os.path.join(install_prefix, 'lib') + \
+            ' -Wl,--exclude-libs=ALL' + \
             ' ' + common_flags
+        self.ldflags = common_flags
         self.libs = ''
 
         self.is_arm = ndk_arch == 'arm'
@@ -130,13 +129,10 @@ class AndroidNdkToolchain:
         self.is_aarch64 = ndk_arch == 'arm64'
         self.is_windows = False
 
-        libcxx_path = os.path.join(ndk_path, 'sources/cxx-stl/llvm-libc++')
-        libcxx_libs_path = os.path.join(libcxx_path, 'libs', android_abi)
-
         libstdcxx_flags = ''
-        libstdcxx_cxxflags = libstdcxx_flags + ' -isystem ' + os.path.join(libcxx_path, 'include') + ' -isystem ' + os.path.join(ndk_path, 'sources/android/support/include')
-        libstdcxx_ldflags = libstdcxx_flags + ' -L' + libcxx_libs_path
-        libstdcxx_libs = '-lc++_static -lc++abi'
+        libstdcxx_cxxflags = ''
+        libstdcxx_ldflags = ''
+        libstdcxx_libs = '-static-libstdc++'
 
         if self.is_armv7:
             # On 32 bit ARM, clang generates no ".eh_frame" section;
@@ -172,6 +168,9 @@ thirdparty_libs = [
     opus,
     flac,
     libid3tag,
+    libmodplug,
+    wildmidi,
+    gme,
     ffmpeg,
     curl,
     libexpat,

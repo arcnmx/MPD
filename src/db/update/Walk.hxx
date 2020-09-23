@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -26,6 +26,7 @@
 #include "config.h"
 
 #include <atomic>
+#include <string_view>
 
 struct StorageFileInfo;
 struct Directory;
@@ -77,7 +78,7 @@ public:
 private:
 	gcc_pure
 	bool SkipSymlink(const Directory *directory,
-			 const char *utf8_name) const noexcept;
+			 std::string_view utf8_name) const noexcept;
 
 	void RemoveExcludedFromDirectory(Directory &directory,
 					 const ExcludeList &exclude_list) noexcept;
@@ -93,7 +94,7 @@ private:
 			    const StorageFileInfo &info) noexcept;
 
 	bool UpdateContainerFile(Directory &directory,
-				 const char *name, const char *suffix,
+				 std::string_view name, const char *suffix,
 				 const StorageFileInfo &info) noexcept;
 
 
@@ -102,29 +103,29 @@ private:
 			       const char *name) noexcept;
 
 	bool UpdateArchiveFile(Directory &directory,
-			       const char *name, const char *suffix,
+			       std::string_view name, const char *suffix,
 			       const StorageFileInfo &info) noexcept;
 
-	void UpdateArchiveFile(Directory &directory, const char *name,
+	void UpdateArchiveFile(Directory &directory, std::string_view name,
 			       const StorageFileInfo &info,
 			       const ArchivePlugin &plugin) noexcept;
 
 
 #else
-	bool UpdateArchiveFile(gcc_unused Directory &directory,
-			       gcc_unused const char *name,
-			       gcc_unused const char *suffix,
-			       gcc_unused const StorageFileInfo &info) noexcept {
+	bool UpdateArchiveFile([[maybe_unused]] Directory &directory,
+			       [[maybe_unused]] const char *name,
+			       [[maybe_unused]] const char *suffix,
+			       [[maybe_unused]] const StorageFileInfo &info) noexcept {
 		return false;
 	}
 #endif
 
-	void UpdatePlaylistFile(Directory &parent, const char *name,
+	void UpdatePlaylistFile(Directory &parent, std::string_view name,
 				const StorageFileInfo &info,
 				const PlaylistPlugin &plugin) noexcept;
 
 	bool UpdatePlaylistFile(Directory &directory,
-				const char *name, const char *suffix,
+				std::string_view name, const char *suffix,
 				const StorageFileInfo &info) noexcept;
 
 	bool UpdateRegularFile(Directory &directory,
@@ -151,21 +152,21 @@ private:
 	 * specifying the kind of virtual directory
 	 */
 	Directory *MakeVirtualDirectoryIfModified(Directory &parent,
-						  const char *name,
+						  std::string_view name,
 						  const StorageFileInfo &info,
 						  unsigned virtual_device) noexcept;
 
 	Directory *LockMakeVirtualDirectoryIfModified(Directory &parent,
-						      const char *name,
+						      std::string_view name,
 						      const StorageFileInfo &info,
 						      unsigned virtual_device) noexcept;
 
 	Directory *DirectoryMakeChildChecked(Directory &parent,
 					     const char *uri_utf8,
-					     const char *name_utf8) noexcept;
+					     std::string_view name_utf8) noexcept;
 
 	Directory *DirectoryMakeUriParentChecked(Directory &root,
-						 const char *uri) noexcept;
+						 std::string_view uri) noexcept;
 
 	void UpdateUri(Directory &root, const char *uri) noexcept;
 };

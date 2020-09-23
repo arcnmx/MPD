@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -26,35 +26,39 @@
 #include <windows.h>
 
 AllocatedString<char>
-WideCharToMultiByte(unsigned code_page, const wchar_t *src)
+WideCharToMultiByte(unsigned code_page, std::wstring_view src)
 {
-	int length = WideCharToMultiByte(code_page, 0, src, -1, nullptr, 0,
+	int length = WideCharToMultiByte(code_page, 0, src.data(), src.size(),
+					 nullptr, 0,
 					 nullptr, nullptr);
 	if (length <= 0)
 		throw MakeLastError("Failed to convert from Unicode");
 
-	std::unique_ptr<char[]> buffer(new char[length]);
-	length = WideCharToMultiByte(code_page, 0, src, -1,
+	auto buffer = std::make_unique<char[]>(length + 1);
+	length = WideCharToMultiByte(code_page, 0, src.data(), src.size(),
 				     buffer.get(), length,
 				     nullptr, nullptr);
 	if (length <= 0)
 		throw MakeLastError("Failed to convert from Unicode");
 
+	buffer[length] = '\0';
 	return AllocatedString<char>::Donate(buffer.release());
 }
 
 AllocatedString<wchar_t>
-MultiByteToWideChar(unsigned code_page, const char *src)
+MultiByteToWideChar(unsigned code_page, std::string_view src)
 {
-	int length = MultiByteToWideChar(code_page, 0, src, -1, nullptr, 0);
+	int length = MultiByteToWideChar(code_page, 0, src.data(), src.size(),
+					 nullptr, 0);
 	if (length <= 0)
 		throw MakeLastError("Failed to convert to Unicode");
 
-	std::unique_ptr<wchar_t[]> buffer(new wchar_t[length]);
-	length = MultiByteToWideChar(code_page, 0, src, -1,
+	auto buffer = std::make_unique<wchar_t[]>(length + 1);
+	length = MultiByteToWideChar(code_page, 0, src.data(), src.size(),
 				     buffer.get(), length);
 	if (length <= 0)
 		throw MakeLastError("Failed to convert to Unicode");
 
+	buffer[length] = L'\0';
 	return AllocatedString<wchar_t>::Donate(buffer.release());
 }

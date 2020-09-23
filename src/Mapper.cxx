@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -33,7 +33,7 @@
 #include "Main.hxx"
 #endif
 
-#include <assert.h>
+#include <cassert>
 
 /**
  * The absolute path of the playlist directory encoded in the
@@ -119,7 +119,7 @@ map_spl_utf8_to_fs(const char *name) noexcept
 	filename_utf8.append(PLAYLIST_FILE_SUFFIX);
 
 	const auto filename_fs =
-		AllocatedPath::FromUTF8(filename_utf8.c_str());
+		AllocatedPath::FromUTF8(filename_utf8);
 	if (filename_fs.IsNull())
 		return nullptr;
 

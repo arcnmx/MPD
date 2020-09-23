@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -19,31 +19,32 @@
 
 #include "ConfigGlue.hxx"
 #include "fs/Path.hxx"
-#include "AudioParser.hxx"
-#include "AudioFormat.hxx"
+#include "fs/NarrowPath.hxx"
 #include "filter/LoadOne.hxx"
 #include "filter/Filter.hxx"
 #include "filter/Prepared.hxx"
+#include "pcm/AudioParser.hxx"
+#include "pcm/AudioFormat.hxx"
 #include "pcm/Volume.hxx"
 #include "mixer/MixerControl.hxx"
 #include "system/Error.hxx"
-#include "system/FileDescriptor.hxx"
+#include "io/FileDescriptor.hxx"
 #include "util/ConstBuffer.hxx"
 #include "util/StringBuffer.hxx"
 #include "util/RuntimeError.hxx"
 #include "util/PrintException.hxx"
 
+#include <cassert>
 #include <memory>
 #include <stdexcept>
 
-#include <assert.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 
 void
-mixer_set_volume(gcc_unused Mixer *mixer,
-		 gcc_unused unsigned volume)
+mixer_set_volume([[maybe_unused]] Mixer *mixer,
+		 [[maybe_unused]] unsigned volume)
 {
 }
 
@@ -52,7 +53,7 @@ LoadFilter(const ConfigData &config, const char *name)
 {
 	const auto *param = config.FindBlock(ConfigBlockOption::AUDIO_FILTER,
 					     "name", name);
-	if (param == NULL)
+	if (param == nullptr)
 		throw FormatRuntimeError("No such configured filter: %s",
 					 name);
 
@@ -70,49 +71,6 @@ ReadOrThrow(FileDescriptor fd, void *buffer, size_t size)
 }
 
 static size_t
-WriteOrThrow(FileDescriptor fd, const void *buffer, size_t size)
-{
-	auto nbytes = fd.Write(buffer, size);
-	if (nbytes < 0)
-		throw MakeErrno("Write failed");
-
-	return nbytes;
-}
-
-static void
-FullRead(FileDescriptor fd, void *_buffer, size_t size)
-{
-	auto buffer = (uint8_t *)_buffer;
-
-	while (size > 0) {
-		size_t nbytes = ReadOrThrow(fd, buffer, size);
-		if (nbytes == 0)
-			throw std::runtime_error("Premature end of input");
-
-		buffer += nbytes;
-		size -= nbytes;
-	}
-}
-
-static void
-FullWrite(FileDescriptor fd, ConstBuffer<uint8_t> src)
-{
-	while (!src.empty()) {
-		size_t nbytes = WriteOrThrow(fd, src.data, src.size);
-		if (nbytes == 0)
-			throw std::runtime_error("Write failed");
-
-		src.skip_front(nbytes);
-	}
-}
-
-static void
-FullWrite(FileDescriptor fd, ConstBuffer<void> src)
-{
-	FullWrite(fd, ConstBuffer<uint8_t>::FromVoid(src));
-}
-
-static size_t
 ReadFrames(FileDescriptor fd, void *_buffer, size_t size, size_t frame_size)
 {
 	auto buffer = (uint8_t *)_buffer;
@@ -124,7 +82,7 @@ ReadFrames(FileDescriptor fd, void *_buffer, size_t size, size_t frame_size)
 	const size_t modulo = nbytes % frame_size;
 	if (modulo > 0) {
 		size_t rest = frame_size - modulo;
-		FullRead(fd, buffer + nbytes, rest);
+		fd.FullRead(buffer + nbytes, rest);
 		nbytes += rest;
 	}
 
@@ -138,7 +96,7 @@ try {
 		return EXIT_FAILURE;
 	}
 
-	const Path config_path = Path::FromFS(argv[1]);
+	const FromNarrowPath config_path = argv[1];
 
 	AudioFormat audio_format(44100, SampleFormat::S16, 2);
 
@@ -180,14 +138,14 @@ try {
 			break;
 
 		auto dest = filter->FilterPCM({(const void *)buffer, (size_t)nbytes});
-		FullWrite(output_fd, dest);
+		output_fd.FullWrite(dest.data, dest.size);
 	}
 
 	while (true) {
 		auto dest = filter->Flush();
 		if (dest.IsNull())
 			break;
-		FullWrite(output_fd, dest);
+		output_fd.FullWrite(dest.data, dest.size);
 	}
 
 	/* cleanup and exit */

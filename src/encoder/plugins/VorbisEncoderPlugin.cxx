@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,7 +20,7 @@
 #include "VorbisEncoderPlugin.hxx"
 #include "OggEncoder.hxx"
 #include "lib/xiph/VorbisComment.hxx"
-#include "AudioFormat.hxx"
+#include "pcm/AudioFormat.hxx"
 #include "config/Domain.hxx"
 #include "util/StringUtil.hxx"
 #include "util/NumberParser.hxx"
@@ -65,12 +65,12 @@ class PreparedVorbisEncoder final : public PreparedEncoder {
 	int bitrate;
 
 public:
-	PreparedVorbisEncoder(const ConfigBlock &block);
+	explicit PreparedVorbisEncoder(const ConfigBlock &block);
 
 	/* virtual methods from class PreparedEncoder */
 	Encoder *Open(AudioFormat &audio_format) override;
 
-	const char *GetMimeType() const noexcept override {
+	[[nodiscard]] const char *GetMimeType() const noexcept override {
 		return "audio/ogg";
 	}
 };
@@ -84,7 +84,7 @@ PreparedVorbisEncoder::PreparedVorbisEncoder(const ConfigBlock &block)
 		char *endptr;
 		quality = ParseDouble(value, &endptr);
 
-		if (*endptr != '\0' || quality < -1.0 || quality > 10.0)
+		if (*endptr != '\0' || quality < -1.0f || quality > 10.0f)
 			throw FormatRuntimeError("quality \"%s\" is not a number in the "
 						 "range -1 to 10",
 						 value);
@@ -122,13 +122,13 @@ VorbisEncoder::VorbisEncoder(float quality, int bitrate,
 	_audio_format.format = SampleFormat::FLOAT;
 	audio_format = _audio_format;
 
-	if (quality >= -1.0) {
+	if (quality >= -1.0f) {
 		/* a quality was configured (VBR) */
 
 		if (0 != vorbis_encode_init_vbr(&vi,
 						audio_format.channels,
 						audio_format.sample_rate,
-						quality * 0.1)) {
+						quality * 0.1f)) {
 			vorbis_info_clear(&vi);
 			throw std::runtime_error("error initializing vorbis vbr");
 		}
@@ -138,7 +138,7 @@ VorbisEncoder::VorbisEncoder(float quality, int bitrate,
 		if (0 != vorbis_encode_init(&vi,
 					    audio_format.channels,
 					    audio_format.sample_rate, -1.0,
-					    bitrate * 1000, -1.0)) {
+					    bitrate * 1000, -1.0f)) {
 			vorbis_info_clear(&vi);
 			throw std::runtime_error("error initializing vorbis encoder");
 		}

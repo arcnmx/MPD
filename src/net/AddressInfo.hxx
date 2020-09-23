@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 Max Kellermann <max.kellermann@gmail.com>
+ * Copyright 2016-2020 Max Kellermann <max.kellermann@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,14 +31,26 @@
 #define NET_ADDRESS_INFO_HXX
 
 #include "SocketAddress.hxx"
+#include "util/Compiler.h"
 
 #include <utility>
 
 #ifdef _WIN32
-#include <ws2tcpip.h>
+#include <ws2tcpip.h> // IWYU pragma: export
 #else
-#include <netdb.h>
+#include <netdb.h> // IWYU pragma: export
 #endif
+
+constexpr struct addrinfo
+MakeAddrInfo(int flags, int family, int socktype, int protocol=0) noexcept
+{
+	struct addrinfo ai{};
+	ai.ai_flags = flags;
+	ai.ai_family = family;
+	ai.ai_socktype = socktype;
+	ai.ai_protocol = protocol;
+	return ai;
+}
 
 class AddressInfo : addrinfo {
 	/* this class cannot be instantiated, it can only be cast from

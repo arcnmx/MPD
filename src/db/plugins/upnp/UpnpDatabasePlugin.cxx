@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -40,9 +40,10 @@
 #include "util/RecursiveMap.hxx"
 #include "util/SplitString.hxx"
 
+#include <cassert>
 #include <string>
+#include <utility>
 
-#include <assert.h>
 #include <string.h>
 
 static const char *const rootid = "0";
@@ -61,8 +62,9 @@ class UpnpSong : UpnpSongData, public LightSong {
 	std::string real_uri2;
 
 public:
-	UpnpSong(UPnPDirObject &&object, std::string &&_uri) noexcept
-		:UpnpSongData(std::move(_uri), std::move(object.tag)),
+	template<typename U>
+	UpnpSong(UPnPDirObject &&object, U &&_uri) noexcept
+		:UpnpSongData(std::forward<U>(_uri), std::move(object.tag)),
 		 LightSong(UpnpSongData::uri.c_str(), UpnpSongData::tag),
 		 real_uri2(std::move(object.url)) {
 		real_uri = real_uri2.c_str();
@@ -86,7 +88,7 @@ public:
 
 	void Open() override;
 	void Close() noexcept override;
-	const LightSong *GetSong(const char *uri_utf8) const override;
+	[[nodiscard]] const LightSong *GetSong(std::string_view uri_utf8) const override;
 	void ReturnSong(const LightSong *song) const noexcept override;
 
 	void Visit(const DatabaseSelection &selection,
@@ -94,22 +96,22 @@ public:
 		   VisitSong visit_song,
 		   VisitPlaylist visit_playlist) const override;
 
-	RecursiveMap<std::string> CollectUniqueTags(const DatabaseSelection &selection,
+	[[nodiscard]] RecursiveMap<std::string> CollectUniqueTags(const DatabaseSelection &selection,
 						    ConstBuffer<TagType> tag_types) const override;
 
-	DatabaseStats GetStats(const DatabaseSelection &selection) const override;
+	[[nodiscard]] DatabaseStats GetStats(const DatabaseSelection &selection) const override;
 
-	std::chrono::system_clock::time_point GetUpdateStamp() const noexcept override {
+	[[nodiscard]] std::chrono::system_clock::time_point GetUpdateStamp() const noexcept override {
 		return std::chrono::system_clock::time_point::min();
 	}
 
 private:
 	void VisitServer(const ContentDirectoryService &server,
-			 std::forward_list<std::string> &&vpath,
+			 std::forward_list<std::string_view> &&vpath,
 			 const DatabaseSelection &selection,
-			 VisitDirectory visit_directory,
-			 VisitSong visit_song,
-			 VisitPlaylist visit_playlist) const;
+			 const VisitDirectory& visit_directory,
+			 const VisitSong& visit_song,
+			 const VisitPlaylist& visit_playlist) const;
 
 	/**
 	 * Run an UPnP search according to MPD parameters, and
@@ -118,14 +120,14 @@ private:
 	void SearchSongs(const ContentDirectoryService &server,
 			 const char *objid,
 			 const DatabaseSelection &selection,
-			 VisitSong visit_song) const;
+			 const VisitSong& visit_song) const;
 
 	UPnPDirContent SearchSongs(const ContentDirectoryService &server,
 				   const char *objid,
 				   const DatabaseSelection &selection) const;
 
 	UPnPDirObject Namei(const ContentDirectoryService &server,
-			    std::forward_list<std::string> &&vpath) const;
+			    std::forward_list<std::string_view> &&vpath) const;
 
 	/**
 	 * Take server and objid, return metadata.
@@ -138,13 +140,13 @@ private:
 	 * except easier cause our inodes have a parent id. Not used
 	 * any more actually (see comments in SearchSongs).
 	 */
-	std::string BuildPath(const ContentDirectoryService &server,
+	[[nodiscard]] std::string BuildPath(const ContentDirectoryService &server,
 			      const UPnPDirObject& dirent) const;
 };
 
 DatabasePtr
 UpnpDatabase::Create(EventLoop &, EventLoop &io_event_loop,
-		     gcc_unused DatabaseListener &listener,
+		     [[maybe_unused]] DatabaseListener &listener,
 		     const ConfigBlock &) noexcept
 {
 	return std::make_unique<UpnpDatabase>(io_event_loop);
@@ -177,21 +179,21 @@ UpnpDatabase::ReturnSong(const LightSong *_song) const noexcept
 {
 	assert(_song != nullptr);
 
-	UpnpSong *song = (UpnpSong *)const_cast<LightSong *>(_song);
+	auto *song = (UpnpSong *)const_cast<LightSong *>(_song);
 	delete song;
 }
 
 // Get song info by path. We can receive either the id path, or the titles
 // one
 const LightSong *
-UpnpDatabase::GetSong(const char *uri) const
+UpnpDatabase::GetSong(std::string_view uri) const
 {
 	auto vpath = SplitString(uri, '/');
 	if (vpath.empty())
 		throw DatabaseError(DatabaseErrorCode::NOT_FOUND,
 				    "No such song");
 
-	auto server = discovery->GetServer(vpath.front().c_str());
+	auto server = discovery->GetServer(vpath.front());
 	vpath.pop_front();
 
 	if (vpath.empty())
@@ -207,7 +209,7 @@ UpnpDatabase::GetSong(const char *uri) const
 			throw DatabaseError(DatabaseErrorCode::NOT_FOUND,
 					    "No such song");
 
-		dirent = ReadNode(server, vpath.front().c_str());
+		dirent = ReadNode(server, std::string(vpath.front()).c_str());
 	}
 
 	return new UpnpSong(std::move(dirent), uri);
@@ -311,7 +313,7 @@ UpnpDatabase::SearchSongs(const ContentDirectoryService &server,
 static void
 visitSong(const UPnPDirObject &meta, const char *path,
 	  const DatabaseSelection &selection,
-	  VisitSong visit_song)
+	  const VisitSong& visit_song)
 {
 	if (!visit_song)
 		return;
@@ -339,12 +341,13 @@ void
 UpnpDatabase::SearchSongs(const ContentDirectoryService &server,
 			  const char *objid,
 			  const DatabaseSelection &selection,
-			  VisitSong visit_song) const
+			  const VisitSong& visit_song) const
 {
 	if (!visit_song)
 		return;
 
-	for (auto &dirent : SearchSongs(server, objid, selection).objects) {
+	const auto content = SearchSongs(server, objid, selection);
+	for (auto &dirent : content.objects) {
 		if (dirent.type != UPnPDirObject::Type::ITEM ||
 		    dirent.item_class != UPnPDirObject::ItemClass::MUSIC)
 			continue;
@@ -367,7 +370,7 @@ UpnpDatabase::SearchSongs(const ContentDirectoryService &server,
 		// which we later have to detect.
 		const std::string path = songPath(server.getFriendlyName(),
 						  dirent.id);
-		visitSong(std::move(dirent), path.c_str(),
+		visitSong(dirent, path.c_str(),
 			  selection, visit_song);
 	}
 }
@@ -396,8 +399,7 @@ UpnpDatabase::BuildPath(const ContentDirectoryService &server,
 		if (path.empty())
 			path = dirent.name;
 		else
-			path = PathTraitsUTF8::Build(dirent.name.c_str(),
-						     path.c_str());
+			path = PathTraitsUTF8::Build(dirent.name, path);
 	}
 
 	return PathTraitsUTF8::Build(server.getFriendlyName(),
@@ -407,7 +409,7 @@ UpnpDatabase::BuildPath(const ContentDirectoryService &server,
 // Take server and internal title pathname and return objid and metadata.
 UPnPDirObject
 UpnpDatabase::Namei(const ContentDirectoryService &server,
-		    std::forward_list<std::string> &&vpath) const
+		    std::forward_list<std::string_view> &&vpath) const
 {
 	if (vpath.empty())
 		// looking for root info
@@ -420,7 +422,7 @@ UpnpDatabase::Namei(const ContentDirectoryService &server,
 		auto dirbuf = server.readDir(handle, objid.c_str());
 
 		// Look for the name in the sub-container list
-		UPnPDirObject *child = dirbuf.FindObject(vpath.front().c_str());
+		UPnPDirObject *child = dirbuf.FindObject(vpath.front());
 		if (child == nullptr)
 			throw DatabaseError(DatabaseErrorCode::NOT_FOUND,
 					    "No such object");
@@ -440,7 +442,7 @@ UpnpDatabase::Namei(const ContentDirectoryService &server,
 static void
 VisitItem(const UPnPDirObject &object, const char *uri,
 	  const DatabaseSelection &selection,
-	  VisitSong visit_song, VisitPlaylist visit_playlist)
+	  const VisitSong& visit_song, const VisitPlaylist& visit_playlist)
 {
 	assert(object.type == UPnPDirObject::Type::ITEM);
 
@@ -469,9 +471,9 @@ VisitItem(const UPnPDirObject &object, const char *uri,
 static void
 VisitObject(const UPnPDirObject &object, const char *uri,
 	    const DatabaseSelection &selection,
-	    VisitDirectory visit_directory,
-	    VisitSong visit_song,
-	    VisitPlaylist visit_playlist)
+	    const VisitDirectory& visit_directory,
+	    const VisitSong& visit_song,
+	    const VisitPlaylist& visit_playlist)
 {
 	switch (object.type) {
 	case UPnPDirObject::Type::UNKNOWN:
@@ -495,11 +497,11 @@ VisitObject(const UPnPDirObject &object, const char *uri,
 // really just one path parameter.
 void
 UpnpDatabase::VisitServer(const ContentDirectoryService &server,
-			  std::forward_list<std::string> &&vpath,
+			  std::forward_list<std::string_view> &&vpath,
 			  const DatabaseSelection &selection,
-			  VisitDirectory visit_directory,
-			  VisitSong visit_song,
-			  VisitPlaylist visit_playlist) const
+			  const VisitDirectory& visit_directory,
+			  const VisitSong& visit_song,
+			  const VisitPlaylist& visit_playlist) const
 {
 	/* If the path begins with rootid, we know that this is a
 	   song, not a directory (because that's how we set things
@@ -514,7 +516,7 @@ UpnpDatabase::VisitServer(const ContentDirectoryService &server,
 		if (vpath.empty())
 			return;
 
-		const std::string objid(std::move(vpath.front()));
+		const std::string objid(vpath.front());
 		vpath.pop_front();
 		if (!vpath.empty())
 			throw DatabaseError(DatabaseErrorCode::NOT_FOUND,
@@ -530,7 +532,7 @@ UpnpDatabase::VisitServer(const ContentDirectoryService &server,
 
 			std::string path = songPath(server.getFriendlyName(),
 						    dirent.id);
-			visitSong(std::move(dirent), path.c_str(),
+			visitSong(dirent, path.c_str(),
 				  selection, visit_song);
 		}
 
@@ -563,7 +565,8 @@ UpnpDatabase::VisitServer(const ContentDirectoryService &server,
 	/* Target was a a container. Visit it. We could read slices
 	   and loop here, but it's not useful as mpd will only return
 	   data to the client when we're done anyway. */
-	for (const auto &dirent : server.readDir(handle, tdirent.id.c_str()).objects) {
+	const auto contents = server.readDir(handle, tdirent.id.c_str());
+	for (const auto &dirent : contents.objects) {
 		const std::string uri = PathTraitsUTF8::Build(base_uri,
 							      dirent.name.c_str());
 		VisitObject(dirent, uri.c_str(),
@@ -591,7 +594,7 @@ UpnpDatabase::Visit(const DatabaseSelection &selection,
 {
 	DatabaseVisitorHelper helper(CheckSelection(selection), visit_song);
 
-	auto vpath = SplitString(selection.uri.c_str(), '/');
+	auto vpath = SplitString(selection.uri, '/');
 	if (vpath.empty()) {
 		for (const auto &server : discovery->GetDirectories()) {
 			if (visit_directory) {
@@ -611,7 +614,7 @@ UpnpDatabase::Visit(const DatabaseSelection &selection,
 	}
 
 	// We do have a path: the first element selects the server
-	std::string servername(std::move(vpath.front()));
+	std::string servername(vpath.front());
 	vpath.pop_front();
 
 	auto server = discovery->GetServer(servername.c_str());

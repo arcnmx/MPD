@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,9 +20,8 @@
 #ifndef MPD_FS_FILESYSTEM_HXX
 #define MPD_FS_FILESYSTEM_HXX
 
-#include "Traits.hxx"
 #include "Path.hxx"
-#include "system/UniqueFileDescriptor.hxx"
+#include "io/UniqueFileDescriptor.hxx"
 
 #ifdef _WIN32
 #include <fileapi.h>
@@ -30,23 +29,8 @@
 
 #include <sys/stat.h>
 #include <unistd.h>
-#include <stdio.h>
-
 
 class AllocatedPath;
-
-/**
- * Wrapper for fopen() that uses #Path names.
- */
-static inline FILE *
-FOpen(Path file, PathTraitsFS::const_pointer_type mode)
-{
-#ifdef _WIN32
-	return _tfopen(file.c_str(), mode);
-#else
-	return fopen(file.c_str(), mode);
-#endif
-}
 
 /**
  * Wrapper for open_cloexec() that uses #Path names.

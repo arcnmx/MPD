@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -54,7 +54,7 @@ struct IntegerToFloatSampleConvert {
 	typedef typename SrcTraits::value_type SV;
 	typedef typename DstTraits::value_type DV;
 
-	static constexpr DV factor = 1.0 / FloatToIntegerSampleConvert<F, Traits>::factor;
+	static constexpr DV factor = 1.0f / FloatToIntegerSampleConvert<F, Traits>::factor;
 	static_assert(factor > 0, "Wrong factor");
 
 	static constexpr DV Convert(SV src) noexcept {

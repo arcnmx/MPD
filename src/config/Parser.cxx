@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -34,7 +34,7 @@ ParseBool(const char *value)
 	if (StringArrayContainsCase(f, value))
 		return false;
 
-	throw FormatRuntimeError("Not a valid boolean (\"yes\" or \"no\"): \"%s\"", value);
+	throw FormatRuntimeError(R"(Not a valid boolean ("yes" or "no"): "%s")", value);
 }
 
 template<size_t OPERAND>

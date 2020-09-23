@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -36,7 +36,7 @@ LogListener::OnLog(JNIEnv *env, int priority,
 
 	assert(method);
 
-	va_list args;
+	std::va_list args;
 	va_start(args, fmt);
 	const auto log = FormatStringV(fmt, args);
 	va_end(args);

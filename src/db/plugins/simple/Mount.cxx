@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -31,7 +31,7 @@ struct PrefixedLightDirectory : LightDirectory {
 	std::string buffer;
 
 	PrefixedLightDirectory(const LightDirectory &directory,
-			       const char *base)
+			       std::string_view base)
 		:LightDirectory(directory),
 		 buffer(IsRoot()
 			? std::string(base)
@@ -41,21 +41,21 @@ struct PrefixedLightDirectory : LightDirectory {
 };
 
 static void
-PrefixVisitDirectory(const char *base, const VisitDirectory &visit_directory,
+PrefixVisitDirectory(std::string_view base, const VisitDirectory &visit_directory,
 		     const LightDirectory &directory)
 {
 	visit_directory(PrefixedLightDirectory(directory, base));
 }
 
 static void
-PrefixVisitSong(const char *base, const VisitSong &visit_song,
+PrefixVisitSong(std::string_view base, const VisitSong &visit_song,
 		const LightSong &song)
 {
 	visit_song(PrefixedLightSong(song, base));
 }
 
 static void
-PrefixVisitPlaylist(const char *base, const VisitPlaylist &visit_playlist,
+PrefixVisitPlaylist(std::string_view base, const VisitPlaylist &visit_playlist,
 		    const PlaylistInfo &playlist,
 		    const LightDirectory &directory)
 {
@@ -64,35 +64,33 @@ PrefixVisitPlaylist(const char *base, const VisitPlaylist &visit_playlist,
 }
 
 void
-WalkMount(const char *base, const Database &db,
-	  const char *uri,
+WalkMount(std::string_view base, const Database &db,
+	  std::string_view uri,
 	  const DatabaseSelection &old_selection,
 	  const VisitDirectory &visit_directory, const VisitSong &visit_song,
 	  const VisitPlaylist &visit_playlist)
 {
-	using namespace std::placeholders;
-
 	VisitDirectory vd;
 	if (visit_directory)
-		vd = std::bind(PrefixVisitDirectory,
-			       base, std::ref(visit_directory), _1);
+		vd = [base,&visit_directory](const auto &dir)
+			{ return PrefixVisitDirectory(base, visit_directory, dir); };
 
 	VisitSong vs;
 	if (visit_song)
-		vs = std::bind(PrefixVisitSong,
-			       base, std::ref(visit_song), _1);
+		vs = [base,&visit_song](const auto &song)
+			{ return PrefixVisitSong(base, visit_song, song); };
 
 	VisitPlaylist vp;
 	if (visit_playlist)
-		vp = std::bind(PrefixVisitPlaylist,
-			       base, std::ref(visit_playlist), _1, _2);
+		vp = [base,&visit_playlist](const auto &playlist, const auto &dir)
+			{ return PrefixVisitPlaylist(base, visit_playlist, playlist, dir); };
 
 	DatabaseSelection selection(old_selection);
 	selection.uri = uri;
 
 	SongFilter prefix_filter;
 
-	if (base != nullptr && selection.filter != nullptr) {
+	if (base.data() != nullptr && selection.filter != nullptr) {
 		/* if the SongFilter contains a LOCATE_TAG_BASE_TYPE
 		   item, copy the SongFilter and drop the mount point
 		   from the filter, because the mounted database

@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -36,14 +36,23 @@
 #include "event/Loop.hxx"
 #include "util/ASCII.hxx"
 #include "util/StringFormat.hxx"
+#include "util/StringView.hxx"
 #include "util/NumberParser.hxx"
 #include "util/Domain.hxx"
 #include "Log.hxx"
 #include "PluginUnavailable.hxx"
+#include "config.h"
 
+#ifdef HAVE_ICU_CONVERTER
+#include "lib/icu/Converter.hxx"
+#include "util/AllocatedString.hxx"
+#include "util/UriExtract.hxx"
+#include "util/UriQueryParser.hxx"
+#endif
+
+#include <cassert>
 #include <cinttypes>
 
-#include <assert.h>
 #include <string.h>
 
 #include <curl/curl.h>
@@ -77,7 +86,7 @@ public:
 			I &&_icy,
 			Mutex &_mutex);
 
-	~CurlInputStream() noexcept;
+	~CurlInputStream() noexcept override;
 
 	CurlInputStream(const CurlInputStream &) = delete;
 	CurlInputStream &operator=(const CurlInputStream &) = delete;
@@ -129,8 +138,8 @@ private:
 	void OnError(std::exception_ptr e) noexcept override;
 
 	/* virtual methods from AsyncInputStream */
-	virtual void DoResume() override;
-	virtual void DoSeek(offset_type new_offset) override;
+	void DoResume() override;
+	void DoSeek(offset_type new_offset) override;
 };
 
 /** libcurl should accept "ICY 200 OK" */
@@ -172,8 +181,46 @@ CurlInputStream::FreeEasyIndirect() noexcept
 {
 	BlockingCall(GetEventLoop(), [this](){
 			FreeEasy();
-			(*curl_init)->InvalidateSockets();
 		});
+}
+
+#ifdef HAVE_ICU_CONVERTER
+
+static std::unique_ptr<IcuConverter>
+CreateIcuConverterForUri(const char *uri)
+{
+	const char *fragment = uri_get_fragment(uri);
+	if (fragment == nullptr)
+		return nullptr;
+
+	const auto charset = UriFindRawQueryParameter(fragment, "charset");
+	if (charset == nullptr)
+		return nullptr;
+
+	const std::string copy(charset.data, charset.size);
+	return IcuConverter::Create(copy.c_str());
+}
+
+#endif
+
+template<typename F>
+static void
+WithConvertedTagValue(const char *uri, const char *value, F &&f) noexcept
+{
+#ifdef HAVE_ICU_CONVERTER
+	try {
+		auto converter = CreateIcuConverterForUri(uri);
+		if (converter) {
+			f(converter->ToUTF8(value).c_str());
+			return;
+		}
+	} catch (...) {
+	}
+#else
+	(void)uri;
+#endif
+
+	f(value);
 }
 
 void
@@ -217,7 +264,13 @@ CurlInputStream::OnHeaders(unsigned status,
 
 	if (i != headers.end()) {
 		TagBuilder tag_builder;
-		tag_builder.AddItem(TAG_NAME, i->second.c_str());
+
+		WithConvertedTagValue(GetURI(), i->second.c_str(),
+				      [&tag_builder](const char *value){
+					      tag_builder.AddItem(TAG_NAME,
+								  value);
+				      });
+
 		SetTag(tag_builder.CommitNew());
 	}
 
@@ -312,7 +365,7 @@ input_curl_init(EventLoop &event_loop, const ConfigBlock &block)
 	http_200_aliases = curl_slist_append(http_200_aliases, "ICY 200 OK");
 
 	proxy = block.GetBlockValue("proxy");
-	proxy_port = block.GetBlockValue("proxy_port", 0u);
+	proxy_port = block.GetBlockValue("proxy_port", 0U);
 	proxy_user = block.GetBlockValue("proxy_user");
 	proxy_password = block.GetBlockValue("proxy_password");
 
@@ -357,9 +410,9 @@ CurlInputStream::InitEasy()
 	request = new CurlRequest(**curl_init, GetURI(), *this);
 
 	request->SetOption(CURLOPT_HTTP200ALIASES, http_200_aliases);
-	request->SetOption(CURLOPT_FOLLOWLOCATION, 1l);
-	request->SetOption(CURLOPT_MAXREDIRS, 5l);
-	request->SetOption(CURLOPT_FAILONERROR, 1l);
+	request->SetOption(CURLOPT_FOLLOWLOCATION, 1L);
+	request->SetOption(CURLOPT_MAXREDIRS, 5L);
+	request->SetOption(CURLOPT_FAILONERROR, 1L);
 
 	if (proxy != nullptr)
 		request->SetOption(CURLOPT_PROXY, proxy);
@@ -372,8 +425,8 @@ CurlInputStream::InitEasy()
 				   StringFormat<1024>("%s:%s", proxy_user,
 						      proxy_password).c_str());
 
-	request->SetOption(CURLOPT_SSL_VERIFYPEER, verify_peer ? 1l : 0l);
-	request->SetOption(CURLOPT_SSL_VERIFYHOST, verify_host ? 2l : 0l);
+	request->SetOption(CURLOPT_SSL_VERIFYPEER, verify_peer ? 1L : 0L);
+	request->SetOption(CURLOPT_SSL_VERIFYHOST, verify_host ? 2L : 0L);
 	request->SetOption(CURLOPT_HTTPHEADER, request_headers.Get());
 }
 
@@ -463,7 +516,8 @@ input_curl_open(const char *url, Mutex &mutex)
 }
 
 static std::set<std::string>
-input_curl_protocols() {
+input_curl_protocols() noexcept
+{
 	std::set<std::string> protocols;
 	auto version_info = curl_version_info(CURLVERSION_FIRST);
 	for (auto proto_ptr = version_info->protocols; *proto_ptr != nullptr; proto_ptr++) {

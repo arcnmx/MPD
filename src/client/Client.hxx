@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -31,12 +31,11 @@
 #include <boost/intrusive/link_mode.hpp>
 #include <boost/intrusive/list_hook.hpp>
 
-#include <set>
-#include <string>
+#include <cstddef>
 #include <list>
 #include <memory>
-
-#include <stddef.h>
+#include <set>
+#include <string>
 
 class SocketAddress;
 class UniqueSocketDescriptor;
@@ -52,6 +51,8 @@ class BackgroundCommand;
 
 class Client final
 	: FullyBufferedSocket,
+	  public boost::intrusive::list_base_hook<boost::intrusive::tag<Partition>,
+						  boost::intrusive::link_mode<boost::intrusive::normal_link>>,
 	  public boost::intrusive::list_base_hook<boost::intrusive::link_mode<boost::intrusive::normal_link>> {
 	TimerEvent timeout_event;
 
@@ -230,24 +231,20 @@ public:
 	 */
 	void AllowFile(Path path_fs) const;
 
-	Partition &GetPartition() noexcept {
+	Partition &GetPartition() const noexcept {
 		return *partition;
 	}
 
-	void SetPartition(Partition &new_partition) noexcept {
-		partition = &new_partition;
-
-		// TODO: set various idle flags?
-	}
+	void SetPartition(Partition &new_partition) noexcept;
 
 	gcc_pure
-	Instance &GetInstance() noexcept;
+	Instance &GetInstance() const noexcept;
 
 	gcc_pure
-	playlist &GetPlaylist() noexcept;
+	playlist &GetPlaylist() const noexcept;
 
 	gcc_pure
-	PlayerControl &GetPlayerControl() noexcept;
+	PlayerControl &GetPlayerControl() const noexcept;
 
 	/**
 	 * Wrapper for Instance::GetDatabase().

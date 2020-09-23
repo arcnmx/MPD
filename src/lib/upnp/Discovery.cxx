@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -325,7 +325,7 @@ UPnPDeviceDirectory::GetDirectories()
 }
 
 ContentDirectoryService
-UPnPDeviceDirectory::GetServer(const char *friendly_name)
+UPnPDeviceDirectory::GetServer(std::string_view friendly_name)
 {
 	const std::lock_guard<Mutex> protect(mutex);
 

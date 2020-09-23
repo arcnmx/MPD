@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,23 +20,23 @@
 #include "OssOutputPlugin.hxx"
 #include "../OutputAPI.hxx"
 #include "mixer/MixerList.hxx"
-#include "system/UniqueFileDescriptor.hxx"
+#include "io/UniqueFileDescriptor.hxx"
 #include "system/Error.hxx"
 #include "util/ConstBuffer.hxx"
 #include "util/Domain.hxx"
 #include "util/ByteOrder.hxx"
 #include "Log.hxx"
 
+#include <cassert>
+#include <cerrno>
 #include <iterator>
 #include <stdexcept>
 
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
-#include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <assert.h>
 
 #if defined(__OpenBSD__) || defined(__NetBSD__)
 # include <soundcard.h>

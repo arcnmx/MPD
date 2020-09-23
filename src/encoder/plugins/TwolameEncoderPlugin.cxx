@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -19,7 +19,7 @@
 
 #include "TwolameEncoderPlugin.hxx"
 #include "../EncoderAPI.hxx"
-#include "AudioFormat.hxx"
+#include "pcm/AudioFormat.hxx"
 #include "util/NumberParser.hxx"
 #include "util/RuntimeError.hxx"
 #include "util/Domain.hxx"
@@ -27,9 +27,9 @@
 
 #include <twolame.h>
 
+#include <cassert>
 #include <stdexcept>
 
-#include <assert.h>
 #include <string.h>
 
 class TwolameEncoder final : public Encoder {
@@ -73,12 +73,12 @@ class PreparedTwolameEncoder final : public PreparedEncoder {
 	int bitrate;
 
 public:
-	PreparedTwolameEncoder(const ConfigBlock &block);
+	explicit PreparedTwolameEncoder(const ConfigBlock &block);
 
 	/* virtual methods from class PreparedEncoder */
 	Encoder *Open(AudioFormat &audio_format) override;
 
-	const char *GetMimeType() const noexcept override {
+	[[nodiscard]] const char *GetMimeType() const noexcept override {
 		return  "audio/mpeg";
 	}
 };
@@ -94,9 +94,9 @@ PreparedTwolameEncoder::PreparedTwolameEncoder(const ConfigBlock &block)
 	if (value != nullptr) {
 		/* a quality was configured (VBR) */
 
-		quality = ParseDouble(value, &endptr);
+		quality = float(ParseDouble(value, &endptr));
 
-		if (*endptr != '\0' || quality < -1.0 || quality > 10.0)
+		if (*endptr != '\0' || quality < -1.0f || quality > 10.0f)
 			throw FormatRuntimeError("quality \"%s\" is not a number in the "
 						 "range -1 to 10",
 						 value);
@@ -131,7 +131,7 @@ static void
 twolame_encoder_setup(twolame_options *options, float quality, int bitrate,
 		      const AudioFormat &audio_format)
 {
-	if (quality >= -1.0) {
+	if (quality >= -1.0f) {
 		/* a quality was configured (VBR) */
 
 		if (0 != twolame_set_VBR(options, true))
@@ -186,7 +186,7 @@ TwolameEncoder::~TwolameEncoder() noexcept
 void
 TwolameEncoder::Write(const void *data, size_t length)
 {
-	const int16_t *src = (const int16_t*)data;
+	const auto *src = (const int16_t*)data;
 
 	assert(output_buffer_position == output_buffer_length);
 

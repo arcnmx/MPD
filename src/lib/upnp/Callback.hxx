@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,7 +20,7 @@
 #ifndef MPD_UPNP_CALLBACK_HXX
 #define MPD_UPNP_CALLBACK_HXX
 
-#include <upnp.h>
+#include "Compat.hxx"
 
 /**
  * A class that is supposed to be used for libupnp asynchronous

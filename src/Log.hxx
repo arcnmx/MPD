@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -77,14 +77,14 @@ void
 FormatInfo(const Domain &domain, const char *fmt, ...) noexcept;
 
 static inline void
-LogDefault(const Domain &domain, const char *msg) noexcept
+LogNotice(const Domain &domain, const char *msg) noexcept
 {
-	Log(LogLevel::DEFAULT, domain, msg);
+	Log(LogLevel::NOTICE, domain, msg);
 }
 
 gcc_printf(2,3)
 void
-FormatDefault(const Domain &domain, const char *fmt, ...) noexcept;
+FormatNotice(const Domain &domain, const char *fmt, ...) noexcept;
 
 static inline void
 LogWarning(const Domain &domain, const char *msg) noexcept

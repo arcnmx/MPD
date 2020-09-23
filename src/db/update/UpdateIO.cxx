@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -26,7 +26,7 @@
 #include "fs/AllocatedPath.hxx"
 #include "Log.hxx"
 
-#include <errno.h>
+#include <cerrno>
 
 bool
 GetInfo(Storage &storage, const char *uri_utf8, StorageFileInfo &info) noexcept
@@ -66,7 +66,7 @@ DirectoryExists(Storage &storage, const Directory &directory) noexcept
 
 static StorageFileInfo
 GetDirectoryChildInfo(Storage &storage, const Directory &directory,
-		      const char *name_utf8)
+		      std::string_view name_utf8)
 {
 	const auto uri_utf8 = PathTraitsUTF8::Build(directory.GetPath(),
 						    name_utf8);
@@ -75,7 +75,7 @@ GetDirectoryChildInfo(Storage &storage, const Directory &directory,
 
 bool
 directory_child_is_regular(Storage &storage, const Directory &directory,
-			   const char *name_utf8) noexcept
+			   std::string_view name_utf8) noexcept
 try {
 	return GetDirectoryChildInfo(storage, directory, name_utf8)
 		.IsRegular();
@@ -85,7 +85,7 @@ try {
 
 bool
 directory_child_access(Storage &storage, const Directory &directory,
-		       const char *name, int mode) noexcept
+		       std::string_view name, int mode) noexcept
 {
 #ifdef _WIN32
 	/* CheckAccess() is useless on WIN32 */

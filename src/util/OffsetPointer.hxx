@@ -29,13 +29,13 @@
 
 #pragma once
 
-#include <stddef.h>
+#include <cstddef>
 
 /**
  * Offset the given pointer by the specified number of bytes.
  */
 constexpr void *
-OffsetPointer(void *p, ptrdiff_t offset)
+OffsetPointer(void *p, ptrdiff_t offset) noexcept
 {
 	return (char *)p + offset;
 }
@@ -44,7 +44,7 @@ OffsetPointer(void *p, ptrdiff_t offset)
  * Offset the given pointer by the specified number of bytes.
  */
 constexpr const void *
-OffsetPointer(const void *p, ptrdiff_t offset)
+OffsetPointer(const void *p, ptrdiff_t offset) noexcept
 {
 	return (const char *)p + offset;
 }

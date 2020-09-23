@@ -32,7 +32,7 @@
 
 #include "util/Compiler.h"
 
-#include <system_error>
+#include <system_error> // IWYU pragma: export
 #include <utility>
 
 #include <stdio.h>
@@ -92,7 +92,8 @@ FormatLastError(const char *fmt, Args&&... args) noexcept
 
 #endif /* _WIN32 */
 
-#include <errno.h>
+#include <cerrno> // IWYU pragma: export
+
 #include <string.h>
 
 /**
@@ -145,6 +146,18 @@ static inline std::system_error
 FormatErrno(const char *fmt, Args&&... args) noexcept
 {
 	return FormatErrno(errno, fmt, std::forward<Args>(args)...);
+}
+
+template<typename... Args>
+static inline std::system_error
+FormatFileNotFound(const char *fmt, Args&&... args) noexcept
+{
+#ifdef _WIN32
+	return FormatLastError(ERROR_FILE_NOT_FOUND, fmt,
+			       std::forward<Args>(args)...);
+#else
+	return FormatErrno(ENOENT, fmt, std::forward<Args>(args)...);
+#endif
 }
 
 gcc_pure

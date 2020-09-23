@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -27,9 +27,10 @@
 #include "Log.hxx"
 #include "util/Compiler.h"
 
+#include <climits>
+
 #include <string.h>
 #include <unistd.h>
-#include <limits.h>
 
 #ifndef HOST_NAME_MAX
 /* HOST_NAME_MAX is not a portable macro; it is undefined on some
@@ -49,7 +50,7 @@ static constexpr Domain zeroconf_domain("zeroconf");
 static int zeroconfEnabled;
 
 void
-ZeroconfInit(const ConfigData &config, gcc_unused EventLoop &loop)
+ZeroconfInit(const ConfigData &config, [[maybe_unused]] EventLoop &loop)
 {
 	const char *serviceName;
 

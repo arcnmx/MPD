@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -56,9 +56,9 @@ class PasswdEntry
 	passwd pw;
 #endif
 
-	passwd *result;
+	passwd *result{nullptr};
 public:
-	PasswdEntry() : result(nullptr) { }
+	PasswdEntry() = default;
 
 	bool ReadByName(const char *name) {
 #ifdef HAVE_GETPWNAM_R
@@ -87,20 +87,20 @@ public:
 
 #ifndef ANDROID
 static inline bool
-IsValidPathString(PathTraitsFS::const_pointer_type path)
+IsValidPathString(PathTraitsFS::const_pointer path)
 {
 	return path != nullptr && *path != '\0';
 }
 
 static inline bool
-IsValidDir(PathTraitsFS::const_pointer_type dir)
+IsValidDir(PathTraitsFS::const_pointer dir)
 {
 	return PathTraitsFS::IsAbsolute(dir) &&
 	       DirectoryExists(Path::FromFS(dir));
 }
 
 static inline AllocatedPath
-SafePathFromFS(PathTraitsFS::const_pointer_type dir)
+SafePathFromFS(PathTraitsFS::const_pointer dir)
 {
 	if (IsValidPathString(dir) && IsValidDir(dir))
 		return AllocatedPath::FromFS(dir);
@@ -164,7 +164,7 @@ ParseConfigLine(char *line, const char *dir_name, AllocatedPath &result_dir)
 	char *line_end;
 	// find end of the string
 	if (quoted) {
-		line_end = strrchr(line, '"');
+		line_end = std::strrchr(line, '"');
 		if (line_end == nullptr)
 			return true;
 	} else {
@@ -303,7 +303,7 @@ GetAppBaseDir() noexcept
 	if (ret == app.size() && GetLastError() == ERROR_INSUFFICIENT_BUFFER)
 		return nullptr;
 
-	auto app_path = AllocatedPath::FromFS(app.data());
+	auto app_path = AllocatedPath::FromFS(PathTraitsFS::string_view(app.data(), ret));
 	return app_path.GetDirectoryName().GetDirectoryName();
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -40,7 +40,7 @@ AddFromDatabase(Partition &partition, const DatabaseSelection &selection)
 {
 	const Database &db = partition.instance.GetDatabaseOrThrow();
 
-	using namespace std::placeholders;
-	const auto f = std::bind(AddToQueue, std::ref(partition), _1);
+	const auto f = [&](const auto &song)
+		{ return AddToQueue(partition, song); };
 	db.Visit(selection, f);
 }

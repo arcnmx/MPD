@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -36,13 +36,13 @@ playlist_provider_print(Response &r,
 			const char *uri,
 			SongEnumerator &e, bool detail) noexcept
 {
-	const std::string base_uri = uri != nullptr
+	const auto base_uri = uri != nullptr
 		? PathTraitsUTF8::GetParent(uri)
-		: std::string(".");
+		: ".";
 
 	std::unique_ptr<DetachedSong> song;
 	while ((song = e.NextSong()) != nullptr) {
-		if (playlist_check_translate_song(*song, base_uri.c_str(),
+		if (playlist_check_translate_song(*song, base_uri,
 						  loader) &&
 		    detail)
 			song_print_info(r, *song);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,13 +22,10 @@
 #include "tag/Tag.hxx"
 #include "util/ASCII.hxx"
 
+#include <cassert>
 #include <stdexcept>
 
-#include <assert.h>
-
-InputStream::~InputStream() noexcept
-{
-}
+InputStream::~InputStream() noexcept = default;
 
 void
 InputStream::Check()
@@ -71,8 +68,9 @@ InputStream::CheapSeeking() const noexcept
 	return IsSeekable() && !ExpensiveSeeking(uri.c_str());
 }
 
+//[[noreturn]]
 void
-InputStream::Seek(std::unique_lock<Mutex> &, gcc_unused offset_type new_offset)
+InputStream::Seek(std::unique_lock<Mutex> &, [[maybe_unused]] offset_type new_offset)
 {
 	throw std::runtime_error("Seeking is not implemented");
 }
@@ -126,7 +124,7 @@ InputStream::LockRead(void *ptr, size_t _size)
 void
 InputStream::ReadFull(std::unique_lock<Mutex> &lock, void *_ptr, size_t _size)
 {
-	uint8_t *ptr = (uint8_t *)_ptr;
+	auto *ptr = (uint8_t *)_ptr;
 
 	size_t nbytes_total = 0;
 	while (_size > 0) {

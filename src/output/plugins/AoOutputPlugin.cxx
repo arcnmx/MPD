@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,7 +22,7 @@
 #include "thread/SafeSingleton.hxx"
 #include "system/Error.hxx"
 #include "util/DivideString.hxx"
-#include "util/SplitString.hxx"
+#include "util/IterableSplitString.hxx"
 #include "util/RuntimeError.hxx"
 #include "util/Domain.hxx"
 #include "util/StringAPI.hxx"
@@ -52,8 +52,8 @@ class AoOutput final : AudioOutput, SafeSingleton<AoInit> {
 
 	size_t frame_size;
 
-	AoOutput(const ConfigBlock &block);
-	~AoOutput();
+	explicit AoOutput(const ConfigBlock &block);
+	~AoOutput() override;
 
 public:
 	static AudioOutput *Create(EventLoop &, const ConfigBlock &block) {
@@ -101,7 +101,7 @@ MakeAoError()
 
 AoOutput::AoOutput(const ConfigBlock &block)
 	:AudioOutput(0),
-	 write_size(block.GetPositiveValue("write_size", 1024u))
+	 write_size(block.GetPositiveValue("write_size", 1024U))
 {
 	const char *value = block.GetBlockValue("driver", "default");
 	if (StringIsEqual(value, "default"))
@@ -122,14 +122,16 @@ AoOutput::AoOutput(const ConfigBlock &block)
 
 	value = block.GetBlockValue("options", nullptr);
 	if (value != nullptr) {
-		for (const auto &i : SplitString(value, ';')) {
-			const DivideString ss(i.c_str(), '=', true);
+		for (StringView i : IterableSplitString(value, ';')) {
+			i.Strip();
 
-			if (!ss.IsDefined())
-				throw FormatRuntimeError("problems parsing options \"%s\"",
-					     i.c_str());
+			auto s = i.Split('=');
+			if (s.first.empty() || s.second.IsNull())
+				throw FormatRuntimeError("problems parsing option \"%.*s\"",
+							 int(i.size), i.data);
 
-			ao_append_option(&options, ss.GetFirst(), ss.GetSecond());
+			const std::string n(s.first), v(s.second);
+			ao_append_option(&options, n.c_str(), v.c_str());
 		}
 	}
 }

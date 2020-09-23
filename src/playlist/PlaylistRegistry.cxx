@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,6 +21,7 @@
 #include "PlaylistRegistry.hxx"
 #include "PlaylistPlugin.hxx"
 #include "SongEnumerator.hxx"
+#include "playlist/Features.h"
 #include "plugins/ExtM3uPlaylistPlugin.hxx"
 #include "plugins/M3uPlaylistPlugin.hxx"
 #include "plugins/XspfPlaylistPlugin.hxx"
@@ -32,6 +33,7 @@
 #include "plugins/FlacPlaylistPlugin.hxx"
 #include "plugins/CuePlaylistPlugin.hxx"
 #include "plugins/EmbeddedCuePlaylistPlugin.hxx"
+#include "decoder/Features.h"
 #include "input/InputStream.hxx"
 #include "util/MimeType.hxx"
 #include "util/StringView.hxx"
@@ -39,9 +41,8 @@
 #include "config/Data.hxx"
 #include "config/Block.hxx"
 
+#include <cassert>
 #include <iterator>
-
-#include <assert.h>
 
 const PlaylistPlugin *const playlist_plugins[] = {
 	&extm3u_playlist_plugin,

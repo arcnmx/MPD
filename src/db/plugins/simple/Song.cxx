@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -41,7 +41,7 @@ Song::GetURI() const noexcept
 		return filename;
 	else {
 		const char *path = parent.GetPath();
-		return PathTraitsUTF8::Build(path, filename.c_str());
+		return PathTraitsUTF8::Build(path, filename);
 	}
 }
 

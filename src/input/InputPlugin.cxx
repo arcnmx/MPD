@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,8 +20,8 @@
 #include "InputPlugin.hxx"
 #include "util/StringCompare.hxx"
 
-#include <assert.h>
 #include <algorithm>
+#include <cassert>
 #include <iterator>
 
 bool
@@ -37,11 +37,9 @@ InputPlugin::SupportsUri(const char *uri) const noexcept
 			if (StringStartsWithIgnoreCase(uri, *i))
 				return true;
 	} else {
-		for (auto schema : protocols()) {
-			if (StringStartsWithIgnoreCase(uri, schema.c_str())){
-				return true;
-			}
-		}
+		const auto p = protocols();
+		return std::any_of(p.begin(), p.end(), [uri](const auto &schema)
+			{ return StringStartsWithIgnoreCase(uri, schema.c_str()); } );
 	}
 	return false;
 }
@@ -69,7 +67,8 @@ constexpr static const char *whitelist[] = {
 };
 
 bool
-protocol_is_whitelisted(const char *proto) {
+protocol_is_whitelisted(const char *proto) noexcept
+{
 	auto begin = std::begin(whitelist);
 	auto end = std::end(whitelist);
 	return std::binary_search(begin, end, proto, [](const char* a, const char* b) {

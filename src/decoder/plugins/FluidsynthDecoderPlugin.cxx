@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -19,7 +19,7 @@
 
 #include "FluidsynthDecoderPlugin.hxx"
 #include "../DecoderAPI.hxx"
-#include "CheckAudioFormat.hxx"
+#include "pcm/CheckAudioFormat.hxx"
 #include "fs/Path.hxx"
 #include "util/Domain.hxx"
 #include "Log.hxx"
@@ -77,7 +77,7 @@ fluidsynth_mpd_log_function(int level,
 static bool
 fluidsynth_init(const ConfigBlock &block)
 {
-	sample_rate = block.GetPositiveValue("sample_rate", 48000u);
+	sample_rate = block.GetPositiveValue("sample_rate", 48000U);
 	CheckSampleRate(sample_rate);
 
 	soundfont_path = block.GetBlockValue("soundfont",
@@ -196,7 +196,7 @@ fluidsynth_file_decode(DecoderClient &client, Path path_fs)
 
 static bool
 fluidsynth_scan_file(Path path_fs,
-		     gcc_unused TagHandler &handler) noexcept
+		     [[maybe_unused]] TagHandler &handler) noexcept
 {
 	return fluid_is_midifile(path_fs.c_str());
 }

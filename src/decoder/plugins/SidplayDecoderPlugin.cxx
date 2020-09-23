@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -17,8 +17,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "config.h"
 #include "SidplayDecoderPlugin.hxx"
+#include "decoder/Features.h"
 #include "../DecoderAPI.hxx"
 #include "tag/Handler.hxx"
 #include "tag/Builder.hxx"
@@ -59,10 +59,6 @@
 #include <memory>
 
 #include <string.h>
-
-#ifdef HAVE_SIDPLAYFP
-#define LIBSIDPLAYFP_VERSION GCC_MAKE_VERSION(LIBSIDPLAYFP_VERSION_MAJ, LIBSIDPLAYFP_VERSION_MIN, LIBSIDPLAYFP_VERSION_LEV)
-#endif
 
 #define SUBTUNE_PREFIX "tune_"
 
@@ -127,7 +123,7 @@ SidplayGlobal::SidplayGlobal(const ConfigBlock &block)
 	if (!database_path.IsNull())
 		songlength_database = sidplay_load_songlength_db(database_path);
 
-	default_songlength = block.GetPositiveValue("default_songlength", 0u);
+	default_songlength = block.GetPositiveValue("default_songlength", 0U);
 
 	default_genre = block.GetBlockValue("default_genre", "");
 
@@ -219,11 +215,24 @@ get_song_length(T &tune) noexcept
 	if (sidplay_global->songlength_database == nullptr)
 		return SignedSongTime::Negative();
 
-	const auto length = sidplay_global->songlength_database->length(tune);
-	if (length < 0)
+#if LIBSIDPLAYFP_VERSION_MAJ >= 2
+	const auto lengthms =
+		sidplay_global->songlength_database->lengthMs(tune);
+	/* check for new song length format since HVSC#68 or later */
+	if (lengthms < 0)
+	{
+#endif
+		/* old song lenghth format */
+		const auto length =
+			sidplay_global->songlength_database->length(tune);
+		if (length >= 0)
+			return SignedSongTime::FromS(length);
 		return SignedSongTime::Negative();
 
-	return SignedSongTime::FromS(length);
+#if LIBSIDPLAYFP_VERSION_MAJ >= 2
+	}
+	return SignedSongTime::FromMS(lengthms);
+#endif
 }
 
 static void
@@ -352,11 +361,7 @@ sidplay_file_decode(DecoderClient &client, Path path_fs)
 #endif
 
 #ifdef HAVE_SIDPLAYFP
-#if LIBSIDPLAYFP_VERSION >= GCC_MAKE_VERSION(1,8,0)
 	const bool stereo = tune.getInfo()->sidChips() >= 2;
-#else
-	const bool stereo = tune.getInfo()->isStereo();
-#endif
 #else
 	const bool stereo = tune.isStereo();
 #endif
@@ -403,7 +408,7 @@ sidplay_file_decode(DecoderClient &client, Path path_fs)
 	const unsigned timebase = player.timebase();
 #endif
 	const unsigned end = duration.IsNegative()
-		? 0u
+		? 0U
 		: duration.ToScale<uint64_t>(timebase);
 
 	DecoderCommand cmd;
@@ -456,10 +461,7 @@ Windows1252ToUTF8(const char *s) noexcept
 {
 #ifdef HAVE_ICU_CONVERTER
 	try {
-		std::unique_ptr<IcuConverter>
-			converter(IcuConverter::Create("windows-1252"));
-
-		return converter->ToUTF8(s);
+		return IcuConverter::Create("windows-1252")->ToUTF8(s);
 	} catch (...) { }
 #endif
 

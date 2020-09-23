@@ -89,12 +89,10 @@
 #
 #port				"6600"
 #
-# This setting controls the type of information which is logged. Available 
-# setting arguments are "default", "secure" or "verbose". The "verbose" setting
-# argument is recommended for troubleshooting, though can quickly stretch
-# available resources on limited hardware storage.
+# Suppress all messages below the given threshold.  Use "verbose" for
+# troubleshooting.
 #
-#log_level			"default"
+#log_level			"notice"
 #
 # Setting "restore_paused" to "yes" puts MPD into pause mode instead
 # of starting playback after startup.
@@ -292,6 +290,20 @@ input {
 #		or
 ##	device		"0"		# optional
 ##	mixer_type	"hardware"	# optional
+#}
+#
+# An example of a wasapi output (Windows multimedia API).
+#
+#audio_output {
+#	type		"wasapi"
+#	name		"My WASAPI output"
+##	device		"Digital Audio (S/PDIF) (High Definition Audio Device)" # optional
+#		or
+##	device		"0"		# optional
+## Exclusive mode blocks all other audio source, and get best audio quality without resampling.
+##	exclusive	"no"		# optional
+## Enumerate all devices in log.
+##	enumerate	"no"		# optional
 #}
 #
 # An example of an openal output.

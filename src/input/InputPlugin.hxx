@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,7 +23,8 @@
 #include "Ptr.hxx"
 #include "thread/Mutex.hxx"
 #include "util/Compiler.h"
-#include <assert.h>
+
+#include <cassert>
 #include <set>
 #include <string>
 
@@ -55,7 +56,7 @@ struct InputPlugin {
 	 * Global deinitialization.  Called once before MPD shuts
 	 * down (only if init() has returned true).
 	 */
-	void (*finish)();
+	void (*finish)() noexcept;
 
 	/**
 	 * Attempt to open the given URI.  Returns nullptr if the
@@ -68,7 +69,7 @@ struct InputPlugin {
 	/**
 	 * return a set of supported protocols
 	 */
-	std::set<std::string> (*protocols)();
+	std::set<std::string> (*protocols)() noexcept;
 
 	/**
 	 * Prepare a #RemoteTagScanner.  The operation must be started
@@ -109,7 +110,8 @@ struct InputPlugin {
 	}
 };
 
+gcc_pure
 bool
-protocol_is_whitelisted(const char *proto);
+protocol_is_whitelisted(const char *proto) noexcept;
 
 #endif

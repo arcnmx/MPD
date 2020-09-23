@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,8 +23,8 @@
 
 #include "PollGroupWinSelect.hxx"
 
-constexpr int EVENT_READ = 0;
-constexpr int EVENT_WRITE = 1;
+static constexpr int EVENT_READ = 0;
+static constexpr int EVENT_WRITE = 1;
 
 static constexpr
 bool HasEvent(unsigned events, int event_id) noexcept

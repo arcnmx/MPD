@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,9 +20,8 @@
 #ifndef MPD_EVENT_POLLRESULT_GENERIC_HXX
 #define MPD_EVENT_POLLRESULT_GENERIC_HXX
 
+#include <cstddef>
 #include <vector>
-
-#include <stddef.h>
 
 class PollResultGeneric
 {

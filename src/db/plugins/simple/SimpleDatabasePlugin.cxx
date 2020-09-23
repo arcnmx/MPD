@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -49,9 +49,8 @@
 #include "fs/io/GzipOutputStream.hxx"
 #endif
 
+#include <cerrno>
 #include <memory>
-
-#include <errno.h>
 
 static constexpr Domain simple_db_domain("simple_db");
 
@@ -71,7 +70,7 @@ inline SimpleDatabase::SimpleDatabase(const ConfigBlock &block)
 
 inline SimpleDatabase::SimpleDatabase(AllocatedPath &&_path,
 #ifndef ENABLE_ZLIB
-				      gcc_unused
+				      [[maybe_unused]]
 #endif
 				      bool _compress) noexcept
 	:Database(simple_db_plugin),
@@ -80,13 +79,13 @@ inline SimpleDatabase::SimpleDatabase(AllocatedPath &&_path,
 #ifdef ENABLE_ZLIB
 	 compress(_compress),
 #endif
-	 cache_path(nullptr),
-	 prefixed_light_song(nullptr) {
+	 cache_path(nullptr)
+{
 }
 
 DatabasePtr
 SimpleDatabase::Create(EventLoop &, EventLoop &,
-		       gcc_unused DatabaseListener &listener,
+		       [[maybe_unused]] DatabaseListener &listener,
 		       const ConfigBlock &block)
 {
 	return std::make_unique<SimpleDatabase>(block);
@@ -198,7 +197,7 @@ SimpleDatabase::Close() noexcept
 }
 
 const LightSong *
-SimpleDatabase::GetSong(const char *uri) const
+SimpleDatabase::GetSong(std::string_view uri) const
 {
 	assert(root != nullptr);
 	assert(prefixed_light_song == nullptr);
@@ -213,27 +212,27 @@ SimpleDatabase::GetSong(const char *uri) const
 		protect.unlock();
 
 		const LightSong *song =
-			r.directory->mounted_database->GetSong(r.uri);
+			r.directory->mounted_database->GetSong(r.rest);
 		if (song == nullptr)
 			return nullptr;
 
 		prefixed_light_song =
-			new PrefixedLightSong(*song, r.directory->GetPath());
+			new PrefixedLightSong(*song, r.uri);
 		r.directory->mounted_database->ReturnSong(song);
 		return prefixed_light_song;
 	}
 
-	if (r.uri == nullptr)
+	if (r.rest.empty())
 		/* it's a directory */
 		throw DatabaseError(DatabaseErrorCode::NOT_FOUND,
 				    "No such song");
 
-	if (strchr(r.uri, '/') != nullptr)
+	if (r.rest.find('/') != std::string_view::npos)
 		/* refers to a URI "below" the actual song */
 		throw DatabaseError(DatabaseErrorCode::NOT_FOUND,
 				    "No such song");
 
-	const Song *song = r.directory->FindSong(r.uri);
+	const Song *song = r.directory->FindSong(r.rest);
 	protect.unlock();
 	if (song == nullptr)
 		throw DatabaseError(DatabaseErrorCode::NOT_FOUND,
@@ -249,7 +248,7 @@ SimpleDatabase::GetSong(const char *uri) const
 }
 
 void
-SimpleDatabase::ReturnSong(gcc_unused const LightSong *song) const noexcept
+SimpleDatabase::ReturnSong([[maybe_unused]] const LightSong *song) const noexcept
 {
 	assert(song != nullptr);
 	assert(song == prefixed_light_song || song == &light_song.Get());
@@ -284,14 +283,15 @@ SimpleDatabase::Visit(const DatabaseSelection &selection,
 {
 	ScopeDatabaseLock protect;
 
-	auto r = root->LookupDirectory(selection.uri.c_str());
+	auto r = root->LookupDirectory(selection.uri);
 
 	if (r.directory->IsMount()) {
 		/* pass the request and the remaining uri to the mounted database */
 		protect.unlock();
 
-		WalkMount(r.directory->GetPath(), *(r.directory->mounted_database),
-			  (r.uri == nullptr)?"":r.uri, selection,
+		WalkMount(r.uri, *(r.directory->mounted_database),
+			  r.rest,
+			  selection,
 			  visit_directory, visit_song, visit_playlist);
 
 		return;
@@ -299,7 +299,7 @@ SimpleDatabase::Visit(const DatabaseSelection &selection,
 
 	DatabaseVisitorHelper helper(CheckSelection(selection), visit_song);
 
-	if (r.uri == nullptr) {
+	if (r.rest.data() == nullptr) {
 		/* it's a directory */
 
 		if (selection.recursive && visit_directory)
@@ -312,9 +312,9 @@ SimpleDatabase::Visit(const DatabaseSelection &selection,
 		return;
 	}
 
-	if (strchr(r.uri, '/') == nullptr) {
+	if (r.rest.find('/') == std::string_view::npos) {
 		if (visit_song) {
-			Song *song = r.directory->FindSong(r.uri);
+			Song *song = r.directory->FindSong(r.rest);
 			if (song != nullptr) {
 				const LightSong song2 = song->Export();
 				if (selection.Match(song2))
@@ -365,7 +365,7 @@ SimpleDatabase::Save()
 #ifdef ENABLE_ZLIB
 	std::unique_ptr<GzipOutputStream> gzip;
 	if (compress) {
-		gzip.reset(new GzipOutputStream(*os));
+		gzip = std::make_unique<GzipOutputStream>(*os);
 		os = gzip.get();
 	}
 #endif
@@ -403,15 +403,15 @@ SimpleDatabase::Mount(const char *uri, DatabasePtr db)
 	ScopeDatabaseLock protect;
 
 	auto r = root->LookupDirectory(uri);
-	if (r.uri == nullptr)
+	if (r.rest.data() == nullptr)
 		throw DatabaseError(DatabaseErrorCode::CONFLICT,
 				    "Already exists");
 
-	if (strchr(r.uri, '/') != nullptr)
+	if (r.rest.find('/') != std::string_view::npos)
 		throw DatabaseError(DatabaseErrorCode::NOT_FOUND,
 				    "Parent not found");
 
-	Directory *mnt = r.directory->CreateChild(r.uri);
+	Directory *mnt = r.directory->CreateChild(r.rest);
 	mnt->mounted_database = std::move(db);
 }
 
@@ -427,7 +427,7 @@ IsUnsafeChar(char ch)
 	return !IsSafeChar(ch);
 }
 
-void
+bool
 SimpleDatabase::Mount(const char *local_uri, const char *storage_uri)
 {
 	if (cache_path.IsNull())
@@ -437,7 +437,7 @@ SimpleDatabase::Mount(const char *local_uri, const char *storage_uri)
 	std::string name(storage_uri);
 	std::replace_if(name.begin(), name.end(), IsUnsafeChar, '_');
 
-	const auto name_fs = AllocatedPath::FromUTF8Throw(name.c_str());
+	const auto name_fs = AllocatedPath::FromUTF8Throw(name);
 
 #ifndef ENABLE_ZLIB
 	constexpr bool compress = false;
@@ -446,14 +446,11 @@ SimpleDatabase::Mount(const char *local_uri, const char *storage_uri)
 						   compress);
 	db->Open();
 
-	// TODO: update the new database instance?
+	bool exists = db->FileExists();
 
-	try {
-		Mount(local_uri, std::move(db));
-	} catch (...) {
-		db->Close();
-		throw;
-	}
+	Mount(local_uri, std::move(db));
+
+	return exists;
 }
 
 inline DatabasePtr
@@ -462,7 +459,7 @@ SimpleDatabase::LockUmountSteal(const char *uri) noexcept
 	ScopeDatabaseLock protect;
 
 	auto r = root->LookupDirectory(uri);
-	if (r.uri != nullptr || !r.directory->IsMount())
+	if (r.rest.data() != nullptr || !r.directory->IsMount())
 		return nullptr;
 
 	auto db = std::move(r.directory->mounted_database);

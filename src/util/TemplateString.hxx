@@ -30,7 +30,7 @@
 #ifndef TEMPLATE_STRING_HXX
 #define TEMPLATE_STRING_HXX
 
-#include <stddef.h>
+#include <cstddef>
 
 namespace TemplateString {
 	/**
@@ -121,6 +121,6 @@ namespace TemplateString {
 
 	template<>
 	struct Concat<> : Empty {};
-};
+}
 
 #endif

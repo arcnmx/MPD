@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -29,7 +29,10 @@
 
 #include <string.h>
 
-AudioOutputSource::AudioOutputSource() noexcept {}
+AudioOutputSource::AudioOutputSource() noexcept
+{
+}
+
 AudioOutputSource::~AudioOutputSource() noexcept = default;
 
 AudioFormat
@@ -192,7 +195,7 @@ AudioOutputSource::FilterChunk(const MusicChunk &chunk)
 			   only if the mix ratio is non-negative; a
 			   negative mix ratio is a MixRamp special
 			   case */
-			mix_ratio = 1.0 - mix_ratio;
+			mix_ratio = 1.0f - mix_ratio;
 
 		void *dest = cross_fade_buffer.Get(other_data.size);
 		memcpy(dest, other_data.data, other_data.size);

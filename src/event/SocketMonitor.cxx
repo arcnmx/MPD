@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,9 +20,12 @@
 #include "SocketMonitor.hxx"
 #include "Loop.hxx"
 
+#include <cassert>
 #include <utility>
 
-#include <assert.h>
+#ifdef USE_EPOLL
+#include <cerrno>
+#endif
 
 void
 SocketMonitor::Dispatch(unsigned flags) noexcept
@@ -64,20 +67,39 @@ SocketMonitor::Close() noexcept
 	Steal().Close();
 }
 
-void
+bool
 SocketMonitor::Schedule(unsigned flags) noexcept
 {
 	assert(IsDefined());
 
 	if (flags == GetScheduledFlags())
-		return;
+		return true;
 
+	bool success;
 	if (scheduled_flags == 0)
-		loop.AddFD(fd.Get(), flags, *this);
+		success = loop.AddFD(fd.Get(), flags, *this);
 	else if (flags == 0)
-		loop.RemoveFD(fd.Get(), *this);
+		success = loop.RemoveFD(fd.Get(), *this);
 	else
-		loop.ModifyFD(fd.Get(), flags, *this);
+		success = loop.ModifyFD(fd.Get(), flags, *this);
 
-	scheduled_flags = flags;
+	if (success)
+		scheduled_flags = flags;
+#ifdef USE_EPOLL
+	else if (errno == EBADF || errno == ENOENT)
+		/* the socket was probably closed by somebody else
+		   (EBADF) or a new file descriptor with the same
+		   number was created but not registered already
+		   (ENOENT) - we can assume that there are no
+		   scheduled events */
+		/* note that when this happens, we're actually lucky
+		   that it has failed - imagine another thread may
+		   meanwhile have created something on the same file
+		   descriptor number, and has registered it; the
+		   epoll_ctl() call above would then have succeeded,
+		   but broke the other thread's epoll registration */
+		scheduled_flags = 0;
+#endif
+
+	return success;
 }

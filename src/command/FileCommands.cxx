@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -43,16 +43,14 @@
 #include "thread/Mutex.hxx"
 #include "Log.hxx"
 
-#include <assert.h>
-#include <inttypes.h> /* for PRIu64 */
+#include <cassert>
+#include <cinttypes> /* for PRIu64 */
 
 gcc_pure
 static bool
-SkipNameFS(PathTraitsFS::const_pointer_type name_fs) noexcept
+SkipNameFS(PathTraitsFS::const_pointer name_fs) noexcept
 {
-	return name_fs[0] == '.' &&
-		(name_fs[1] == 0 ||
-		 (name_fs[1] == '.' && name_fs[2] == 0));
+	return PathTraitsFS::IsSpecialFilename(name_fs);
 }
 
 gcc_pure
@@ -127,12 +125,7 @@ gcc_pure
 static bool
 IsValidValue(const StringView s) noexcept
 {
-	for (const char ch : s) {
-		if ((unsigned char)ch < 0x20)
-			return false;
-	}
-
-	return true;
+	return std::none_of(s.begin(), s.end(), [](const auto &ch) { return (unsigned char)ch < 0x20; });
 }
 
 class PrintCommentHandler final : public NullTagHandler {
@@ -169,7 +162,7 @@ handle_read_comments(Client &client, Request args, Response &r)
  * opened file or #nullptr on failure.
  */
 static InputStreamPtr
-find_stream_art(const char *directory, Mutex &mutex)
+find_stream_art(std::string_view directory, Mutex &mutex)
 {
 	static constexpr char const * art_names[] = {
 		"cover.png",
@@ -195,11 +188,11 @@ find_stream_art(const char *directory, Mutex &mutex)
 static CommandResult
 read_stream_art(Response &r, const char *uri, size_t offset)
 {
-	std::string art_directory = PathTraitsUTF8::GetParent(uri);
+	const auto art_directory = PathTraitsUTF8::GetParent(uri);
 
 	Mutex mutex;
 
-	InputStreamPtr is = find_stream_art(art_directory.c_str(), mutex);
+	InputStreamPtr is = find_stream_art(art_directory, mutex);
 
 	if (is == nullptr) {
 		r.Error(ACK_ERROR_NO_EXIST, "No file exists");

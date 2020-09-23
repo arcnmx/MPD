@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Max Kellermann <max.kellermann@gmail.com>
+ * Copyright 2015-2020 Max Kellermann <max.kellermann@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,35 +36,35 @@
 template<typename T=char>
 class StringPointer {
 public:
-	typedef T value_type;
-	typedef T &reference_type;
-	typedef const T &const_reference_type;
-	typedef T *pointer_type;
-	typedef const T *const_pointer_type;
+	using value_type = T;
+	using reference = T &;
+	using const_reference = const T &;
+	using pointer = T *;
+	using const_pointer = const T *;
 
 	static constexpr value_type SENTINEL = '\0';
 
 private:
-	const_pointer_type value;
+	const_pointer value;
 
 public:
 	StringPointer() = default;
-	constexpr StringPointer(const_pointer_type _value)
+	constexpr StringPointer(const_pointer _value) noexcept
 		:value(_value) {}
 
 	/**
 	 * Check if this is a "nulled" instance.  A "nulled" instance
 	 * must not be used.
 	 */
-	constexpr bool IsNull() const {
+	constexpr bool IsNull() const noexcept {
 		return value == nullptr;
 	}
 
-	constexpr const_pointer_type c_str() const {
+	constexpr const_pointer c_str() const noexcept {
 		return value;
 	}
 
-	bool empty() const {
+	bool empty() const noexcept {
 		return *value == SENTINEL;
 	}
 };

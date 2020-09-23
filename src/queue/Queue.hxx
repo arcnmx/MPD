@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -25,10 +25,9 @@
 #include "SingleMode.hxx"
 #include "util/LazyRandomEngine.hxx"
 
+#include <cassert>
+#include <cstdint>
 #include <utility>
-
-#include <assert.h>
-#include <stdint.h>
 
 class DetachedSong;
 

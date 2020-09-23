@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -25,7 +25,7 @@
 #include "Dither.hxx"
 
 #ifndef NDEBUG
-#include <assert.h>
+#include <cassert>
 #endif
 
 template<typename T> struct ConstBuffer;
@@ -48,7 +48,7 @@ static constexpr int PCM_VOLUME_1S = PCM_VOLUME_1;
 constexpr int
 pcm_float_to_volume(float volume) noexcept
 {
-	return volume * PCM_VOLUME_1 + 0.5;
+	return int(volume * PCM_VOLUME_1 + 0.5f);
 }
 
 constexpr float

@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -33,12 +33,15 @@
 #include "playlist/PlaylistRegistry.hxx"
 #include "playlist/PlaylistPlugin.hxx"
 #include "fs/AllocatedPath.hxx"
+#include "fs/NarrowPath.hxx"
 #include "fs/Traits.hxx"
 #include "fs/FileSystem.hxx"
 #include "fs/StandardDirectory.hxx"
+#include "io/uring/Features.h"
 #include "util/Domain.hxx"
 #include "util/OptionDef.hxx"
 #include "util/OptionParser.hxx"
+#include "Version.h"
 
 #ifdef _WIN32
 #include "system/Error.hxx"
@@ -56,6 +59,7 @@
 #include "neighbor/NeighborPlugin.hxx"
 #endif
 
+#include "encoder/Features.h"
 #ifdef ENABLE_ENCODER
 #include "encoder/EncoderList.hxx"
 #include "encoder/EncoderPlugin.hxx"
@@ -66,9 +70,6 @@
 #include "archive/ArchivePlugin.hxx"
 #endif
 
-#include <stdio.h>
-#include <stdlib.h>
-
 namespace {
 #ifdef _WIN32
 constexpr auto CONFIG_FILE_LOCATION = Path::FromFS(PATH_LITERAL("mpd\\mpd.conf"));
@@ -78,7 +79,7 @@ constexpr auto USER_CONFIG_FILE_LOCATION1 = Path::FromFS(PATH_LITERAL(".mpdconf"
 constexpr auto USER_CONFIG_FILE_LOCATION2 = Path::FromFS(PATH_LITERAL(".mpd/mpd.conf"));
 constexpr auto USER_CONFIG_FILE_LOCATION_XDG = Path::FromFS(PATH_LITERAL("mpd/mpd.conf"));
 #endif
-}
+} // namespace
 
 enum Option {
 	OPTION_KILL,
@@ -106,8 +107,8 @@ static constexpr OptionDef option_defs[] = {
 
 static constexpr Domain cmdline_domain("cmdline");
 
-gcc_noreturn
-static void version(void)
+[[noreturn]]
+static void version()
 {
 	printf("Music Player Daemon " VERSION " (%s)"
 	       "\n"
@@ -146,15 +147,19 @@ static void version(void)
 	       "Decoders plugins:\n");
 
 	decoder_plugins_for_each([](const DecoderPlugin &plugin){
-			printf(" [%s]", plugin.name);
+		printf(" [%s]", plugin.name);
 
-			const char *const*suffixes = plugin.suffixes;
-			if (suffixes != nullptr)
-				for (; *suffixes != nullptr; ++suffixes)
-					printf(" %s", *suffixes);
+		const char *const*suffixes = plugin.suffixes;
+		if (suffixes != nullptr)
+			for (; *suffixes != nullptr; ++suffixes)
+				printf(" %s", *suffixes);
 
-			printf("\n");
-		});
+		if (plugin.protocols != nullptr)
+			for (const auto &i : plugin.protocols())
+				printf(" %s", i.c_str());
+
+		printf("\n");
+	});
 
 	printf("\n"
 	       "Filters:\n"
@@ -203,6 +208,9 @@ static void version(void)
 	       "\n"
 	       "Input plugins:\n"
 	       " file"
+#ifdef HAVE_URING
+	       " io_uring"
+#endif
 #ifdef ENABLE_ARCHIVE
 	       " archive"
 #endif
@@ -256,7 +264,7 @@ static void version(void)
 #endif
 	       "\n");
 
-	exit(EXIT_SUCCESS);
+	std::exit(EXIT_SUCCESS);
 }
 
 static void PrintOption(const OptionDef &opt)
@@ -272,8 +280,8 @@ static void PrintOption(const OptionDef &opt)
 		       opt.GetDescription());
 }
 
-gcc_noreturn
-static void help(void)
+[[noreturn]]
+static void help()
 {
 	printf("Usage:\n"
 	       "  mpd [OPTION...] [path/to/mpd.conf]\n"
@@ -283,10 +291,10 @@ static void help(void)
 	       "Options:\n");
 
 	for (const auto &i : option_defs)
-		if(i.HasDescription() == true) // hide hidden options from help print
+		if(i.HasDescription()) // hide hidden options from help print
 			PrintOption(i);
 
-	exit(EXIT_SUCCESS);
+	std::exit(EXIT_SUCCESS);
 }
 
 class ConfigLoader
@@ -297,7 +305,7 @@ public:
 	explicit ConfigLoader(ConfigData &_config) noexcept
 		:config(_config) {}
 
-	bool TryFile(const Path path);
+	bool TryFile(Path path);
 	bool TryFile(const AllocatedPath &base_path, Path path);
 };
 
@@ -381,17 +389,7 @@ ParseCommandLine(int argc, char **argv, struct options &options,
 
 	if (config_file != nullptr) {
 		/* use specified configuration file */
-#ifdef _UNICODE
-		wchar_t buffer[MAX_PATH];
-		auto result = MultiByteToWideChar(CP_ACP, 0, config_file, -1,
-						  buffer, std::size(buffer));
-		if (result <= 0)
-			throw MakeLastError("MultiByteToWideChar() failed");
-
-		ReadConfigFile(config, Path::FromFS(buffer));
-#else
-		ReadConfigFile(config, Path::FromFS(config_file));
-#endif
+		ReadConfigFile(config, FromNarrowPath(config_file));
 		return;
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -19,18 +19,19 @@
 
 #include "InotifySource.hxx"
 #include "InotifyDomain.hxx"
-#include "system/FileDescriptor.hxx"
+#include "io/FileDescriptor.hxx"
 #include "system/FatalError.hxx"
 #include "system/Error.hxx"
 #include "Log.hxx"
 
+#include <cerrno>
+#include <climits>
+#include <cstdint>
+
 #include <sys/inotify.h>
-#include <errno.h>
-#include <stdint.h>
-#include <limits.h>
 
 bool
-InotifySource::OnSocketReady(gcc_unused unsigned flags) noexcept
+InotifySource::OnSocketReady([[maybe_unused]] unsigned flags) noexcept
 {
 	uint8_t buffer[4096];
 	static_assert(sizeof(buffer) >= sizeof(struct inotify_event) + NAME_MAX + 1,
@@ -47,7 +48,7 @@ InotifySource::OnSocketReady(gcc_unused unsigned flags) noexcept
 
 	while (true) {
 		const size_t remaining = end - p;
-		const struct inotify_event *event =
+		const auto *event =
 			(const struct inotify_event *)p;
 		if (remaining < sizeof(*event) ||
 		    remaining < sizeof(*event) + event->len)

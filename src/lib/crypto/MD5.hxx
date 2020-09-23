@@ -34,6 +34,7 @@
 #include "util/Compiler.h"
 
 #include <array>
+#include <cstdint>
 
 template<typename T> struct ConstBuffer;
 

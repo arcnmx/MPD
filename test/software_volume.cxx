@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -24,8 +24,8 @@
  */
 
 #include "pcm/Volume.hxx"
-#include "AudioParser.hxx"
-#include "AudioFormat.hxx"
+#include "pcm/AudioParser.hxx"
+#include "pcm/AudioFormat.hxx"
 #include "util/ConstBuffer.hxx"
 #include "util/PrintException.hxx"
 
@@ -58,7 +58,7 @@ try {
 
 	while ((nbytes = read(0, buffer, sizeof(buffer))) > 0) {
 		auto dest = pv.Apply({buffer, size_t(nbytes)});
-		gcc_unused ssize_t ignored = write(1, dest.data, dest.size);
+		[[maybe_unused]] ssize_t ignored = write(1, dest.data, dest.size);
 	}
 
 	pv.Close();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,16 +22,15 @@
 
 #include "config.h"
 
-#if defined(HAVE_ICU) || defined(_WIN32)
+#ifdef HAVE_ICU
 #define HAVE_ICU_CASE_FOLD
 
-#include "util/Compiler.h"
+#include <string_view>
 
 template<typename T> class AllocatedString;
 
-gcc_nonnull_all
 AllocatedString<char>
-IcuCaseFold(const char *src) noexcept;
+IcuCaseFold(std::string_view src) noexcept;
 
 #endif
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -26,6 +26,7 @@
 #include "../InputStream.hxx"
 #include "PluginUnavailable.hxx"
 #include "../InputPlugin.hxx"
+#include "util/StringAPI.hxx"
 
 class FfmpegInputStream final : public InputStream {
 	Ffmpeg::IOContext io;
@@ -47,7 +48,7 @@ public:
 	}
 
 	/* virtual methods from InputStream */
-	bool IsEOF() const noexcept override;
+	[[nodiscard]] bool IsEOF() const noexcept override;
 	size_t Read(std::unique_lock<Mutex> &lock,
 		    void *ptr, size_t size) override;
 	void Seek(std::unique_lock<Mutex> &lock,
@@ -73,11 +74,20 @@ input_ffmpeg_init(EventLoop &, const ConfigBlock &)
 }
 
 static std::set<std::string>
-input_ffmpeg_protocols() {
+input_ffmpeg_protocols() noexcept
+{
 	void *opaque = nullptr;
 	const char* protocol;
 	std::set<std::string> protocols;
 	while ((protocol = avio_enum_protocols(&opaque, 0))) {
+		if (StringIsEqual(protocol, "hls")) {
+			/* just "hls://" doesn't work, but these do
+			   work: */
+			protocols.emplace("hls+http://");
+			protocols.emplace("hls+https://");
+			continue;
+		}
+
 		if (protocol_is_whitelisted(protocol)) {
 			std::string schema(protocol);
 			schema.append("://");

@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -35,15 +35,16 @@
 #include "util/RuntimeError.hxx"
 #include "util/ASCII.hxx"
 #include "util/DivideString.hxx"
-#include "AudioParser.hxx"
-#include "AudioFormat.hxx"
+#include "pcm/AudioParser.hxx"
+#include "pcm/AudioFormat.hxx"
 #include "Log.hxx"
 #include "event/MultiSocketMonitor.hxx"
 #include "event/DeferEvent.hxx"
 
 #include <alsa/asoundlib.h>
 
-#include <assert.h>
+#include <cassert>
+
 #include <string.h>
 
 static constexpr Domain alsa_input_domain("alsa");
@@ -89,7 +90,7 @@ public:
 			Mutex &_mutex,
 			const SourceSpec &spec);
 
-	~AlsaInputStream() {
+	~AlsaInputStream() override {
 		BlockingCall(MultiSocketMonitor::GetEventLoop(), [this](){
 				MultiSocketMonitor::Reset();
 				defer_invalidate_sockets.Cancel();
@@ -103,13 +104,13 @@ public:
 
 protected:
 	/* virtual methods from AsyncInputStream */
-	virtual void DoResume() override {
+	void DoResume() override {
 		snd_pcm_resume(capture_handle);
 
 		InvalidateSockets();
 	}
 
-	virtual void DoSeek(gcc_unused offset_type new_offset) override {
+	void DoSeek([[maybe_unused]] offset_type new_offset) override {
 		/* unreachable because seekable==false */
 		SeekDone();
 	}
@@ -139,7 +140,7 @@ class AlsaInputStream::SourceSpec {
 	DivideString components;
 
 public:
-	SourceSpec(const char *_uri)
+	explicit SourceSpec(const char *_uri)
 		: uri(_uri)
 		, components(uri, '?')
 	{
@@ -160,22 +161,22 @@ public:
 				audio_format = ParseAudioFormat(format_string, false);
 		}
 	}
-	bool IsValidScheme() const noexcept {
+	[[nodiscard]] bool IsValidScheme() const noexcept {
 		return device_name != nullptr;
 	}
-	bool IsValid() const noexcept {
+	[[nodiscard]] bool IsValid() const noexcept {
 		return (device_name != nullptr) && (format_string != nullptr);
 	}
-	const char *GetURI() const noexcept {
+	[[nodiscard]] const char *GetURI() const noexcept {
 		return uri;
 	}
-	const char *GetDeviceName() const noexcept {
+	[[nodiscard]] const char *GetDeviceName() const noexcept {
 		return device_name;
 	}
-	const char *GetFormatString() const noexcept {
+	[[nodiscard]] const char *GetFormatString() const noexcept {
 		return format_string;
 	}
-	AudioFormat GetAudioFormat() const noexcept {
+	[[nodiscard]] AudioFormat GetAudioFormat() const noexcept {
 		return audio_format;
 	}
 };
@@ -288,7 +289,7 @@ AlsaInputStream::Recover(int err)
 		if (err == -EAGAIN)
 			return 0;
 		/* fall-through to snd_pcm_prepare: */
-#if GCC_CHECK_VERSION(7,0)
+#if CLANG_OR_GCC_VERSION(7,0)
 		[[fallthrough]];
 #endif
 	case SND_PCM_STATE_OPEN:
@@ -355,18 +356,18 @@ AlsaInputStream::ConfigureCapture(AudioFormat audio_format)
 	snd_pcm_hw_params_get_buffer_size_min(hw_params, &buffer_size_min);
 	snd_pcm_hw_params_get_buffer_size_max(hw_params, &buffer_size_max);
 	unsigned buffer_time_min, buffer_time_max;
-	snd_pcm_hw_params_get_buffer_time_min(hw_params, &buffer_time_min, 0);
-	snd_pcm_hw_params_get_buffer_time_max(hw_params, &buffer_time_max, 0);
+	snd_pcm_hw_params_get_buffer_time_min(hw_params, &buffer_time_min, nullptr);
+	snd_pcm_hw_params_get_buffer_time_max(hw_params, &buffer_time_max, nullptr);
 	FormatDebug(alsa_input_domain, "buffer: size=%u..%u time=%u..%u",
 		    (unsigned)buffer_size_min, (unsigned)buffer_size_max,
 		    buffer_time_min, buffer_time_max);
 
 	snd_pcm_uframes_t period_size_min, period_size_max;
-	snd_pcm_hw_params_get_period_size_min(hw_params, &period_size_min, 0);
-	snd_pcm_hw_params_get_period_size_max(hw_params, &period_size_max, 0);
+	snd_pcm_hw_params_get_period_size_min(hw_params, &period_size_min, nullptr);
+	snd_pcm_hw_params_get_period_size_max(hw_params, &period_size_max, nullptr);
 	unsigned period_time_min, period_time_max;
-	snd_pcm_hw_params_get_period_time_min(hw_params, &period_time_min, 0);
-	snd_pcm_hw_params_get_period_time_max(hw_params, &period_time_max, 0);
+	snd_pcm_hw_params_get_period_time_min(hw_params, &period_time_min, nullptr);
+	snd_pcm_hw_params_get_period_time_max(hw_params, &period_time_max, nullptr);
 	FormatDebug(alsa_input_domain, "period: size=%u..%u time=%u..%u",
 		    (unsigned)period_size_min, (unsigned)period_size_max,
 		    period_time_min, period_time_max);

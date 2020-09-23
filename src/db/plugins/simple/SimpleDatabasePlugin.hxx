@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -103,9 +103,11 @@ public:
 
 	/**
 	 * Throws #std::runtime_error on error.
+	 *
+	 * @return false if the mounted database needs to be updated
 	 */
 	gcc_nonnull_all
-	void Mount(const char *local_uri, const char *storage_uri);
+	bool Mount(const char *local_uri, const char *storage_uri);
 
 	gcc_nonnull_all
 	bool Unmount(const char *uri) noexcept;
@@ -114,7 +116,7 @@ public:
 	void Open() override;
 	void Close() noexcept override;
 
-	const LightSong *GetSong(const char *uri_utf8) const override;
+	const LightSong *GetSong(std::string_view uri_utf8) const override;
 	void ReturnSong(const LightSong *song) const noexcept override;
 
 	void Visit(const DatabaseSelection &selection,

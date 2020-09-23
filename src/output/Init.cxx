@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,7 +22,7 @@
 #include "Domain.hxx"
 #include "OutputAPI.hxx"
 #include "Defaults.hxx"
-#include "AudioParser.hxx"
+#include "pcm/AudioParser.hxx"
 #include "mixer/MixerList.hxx"
 #include "mixer/MixerType.hxx"
 #include "mixer/MixerControl.hxx"
@@ -39,9 +39,9 @@
 #include "util/StringFormat.hxx"
 #include "Log.hxx"
 
+#include <cassert>
 #include <stdexcept>
 
-#include <assert.h>
 #include <string.h>
 
 #define AUDIO_OUTPUT_TYPE	"type"
@@ -62,15 +62,15 @@ FilteredAudioOutput::FilteredAudioOutput(const char *_plugin_name,
 static const AudioOutputPlugin *
 audio_output_detect()
 {
-	LogDefault(output_domain, "Attempt to detect audio output device");
+	LogInfo(output_domain, "Attempt to detect audio output device");
 
 	audio_output_plugins_for_each(plugin) {
 		if (plugin->test_default_device == nullptr)
 			continue;
 
-		FormatDefault(output_domain,
-			      "Attempting to detect a %s audio device",
-			      plugin->name);
+		FormatInfo(output_domain,
+			   "Attempting to detect a %s audio device",
+			   plugin->name);
 		if (ao_plugin_test_default_device(plugin))
 			return plugin;
 	}
@@ -289,9 +289,9 @@ audio_output_new(EventLoop &event_loop,
 
 		plugin = audio_output_detect();
 
-		FormatDefault(output_domain,
-			      "Successfully detected a %s audio device",
-			      plugin->name);
+		FormatNotice(output_domain,
+			     "Successfully detected a %s audio device",
+			     plugin->name);
 	}
 
 	std::unique_ptr<AudioOutput> ao(ao_plugin_init(event_loop, *plugin,

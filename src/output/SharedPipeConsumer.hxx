@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,7 +22,7 @@
 
 #include "util/Compiler.h"
 
-#include <assert.h>
+#include <cassert>
 
 struct MusicChunk;
 class MusicPipe;
@@ -76,7 +76,7 @@ public:
 
 	const MusicChunk *Get() noexcept;
 
-	void Consume(gcc_unused const MusicChunk &_chunk) {
+	void Consume([[maybe_unused]] const MusicChunk &_chunk) {
 		assert(chunk != nullptr);
 		assert(chunk == &_chunk);
 
@@ -86,7 +86,7 @@ public:
 	gcc_pure
 	bool IsConsumed(const MusicChunk &_chunk) const noexcept;
 
-	void ClearTail(gcc_unused const MusicChunk &_chunk) noexcept {
+	void ClearTail([[maybe_unused]] const MusicChunk &_chunk) noexcept {
 		assert(chunk == &_chunk);
 		assert(consumed);
 		chunk = nullptr;

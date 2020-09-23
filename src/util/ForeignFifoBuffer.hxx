@@ -32,12 +32,10 @@
 
 #include "WritableBuffer.hxx"
 
-#include <utility>
 #include <algorithm>
-
+#include <cassert>
 #include <cstddef>
-
-#include <assert.h>
+#include <utility>
 
 /**
  * A first-in-first-out buffer: you can append data at the end, and
@@ -51,10 +49,10 @@
 template<typename T>
 class ForeignFifoBuffer {
 public:
-	using size_type = size_t;
+	using size_type = std::size_t;
 	using Range = WritableBuffer<T>;
-	using pointer_type = typename Range::pointer_type;
-	using const_pointer_type = typename Range::const_pointer_type;
+	using pointer = typename Range::pointer;
+	using const_pointer = typename Range::const_pointer;
 
 protected:
 	size_type head = 0, tail = 0, capacity;
@@ -211,7 +209,7 @@ public:
 		head += n;
 	}
 
-	size_type Read(pointer_type p, size_type n) noexcept {
+	size_type Read(pointer p, size_type n) noexcept {
 		auto range = Read();
 		if (n > range.size)
 			n = range.size;

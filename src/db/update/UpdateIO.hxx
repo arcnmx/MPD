@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,6 +21,8 @@
 #define MPD_UPDATE_IO_HXX
 
 #include "util/Compiler.h"
+
+#include <string_view>
 
 struct Directory;
 struct StorageFileInfo;
@@ -48,7 +50,7 @@ DirectoryExists(Storage &storage, const Directory &directory) noexcept;
 gcc_pure
 bool
 directory_child_is_regular(Storage &storage, const Directory &directory,
-			   const char *name_utf8) noexcept;
+			   std::string_view name_utf8) noexcept;
 
 /**
  * Checks if the given permissions on the mapped file are given.
@@ -56,6 +58,6 @@ directory_child_is_regular(Storage &storage, const Directory &directory,
 gcc_pure
 bool
 directory_child_access(Storage &storage, const Directory &directory,
-		       const char *name, int mode) noexcept;
+		       std::string_view name, int mode) noexcept;
 
 #endif

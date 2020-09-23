@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -24,7 +24,7 @@
  * A command running in background.  It can take some time to finish,
  * and will then call Client::OnBackgroundCommandFinished() from
  * inside the client's #EventLoop thread.  The important point is that
- * sucha long-running command does not block MPD's main loop, and
+ * such a long-running command does not block MPD's main loop, and
  * other clients can still be handled meanwhile.
  *
  * (Note: "idle" is not a "background command" by this definition; it

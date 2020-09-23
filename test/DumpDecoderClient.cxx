@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -28,15 +28,15 @@
 
 void
 DumpDecoderClient::Ready(const AudioFormat audio_format,
-			 gcc_unused bool seekable,
+			 bool seekable,
 			 SignedSongTime duration) noexcept
 {
 	assert(!initialized);
 	assert(audio_format.IsValid());
 
-	fprintf(stderr, "audio_format=%s duration=%f\n",
+	fprintf(stderr, "audio_format=%s duration=%f seekable=%d\n",
 		ToString(audio_format).c_str(),
-		duration.ToDoubleS());
+		duration.ToDoubleS(), seekable);
 
 	initialized = true;
 }
@@ -86,26 +86,26 @@ DumpDecoderClient::Read(InputStream &is, void *buffer, size_t length) noexcept
 }
 
 void
-DumpDecoderClient::SubmitTimestamp(gcc_unused FloatDuration t) noexcept
+DumpDecoderClient::SubmitTimestamp([[maybe_unused]] FloatDuration t) noexcept
 {
 }
 
 DecoderCommand
-DumpDecoderClient::SubmitData(gcc_unused InputStream *is,
+DumpDecoderClient::SubmitData([[maybe_unused]] InputStream *is,
 			      const void *data, size_t datalen,
-			      gcc_unused uint16_t kbit_rate) noexcept
+			      [[maybe_unused]] uint16_t kbit_rate) noexcept
 {
 	if (kbit_rate != prev_kbit_rate) {
 		prev_kbit_rate = kbit_rate;
 		fprintf(stderr, "%u kbit/s\n", kbit_rate);
 	}
 
-	gcc_unused ssize_t nbytes = write(STDOUT_FILENO, data, datalen);
-	return DecoderCommand::NONE;
+	[[maybe_unused]] ssize_t nbytes = write(STDOUT_FILENO, data, datalen);
+	return GetCommand();
 }
 
 DecoderCommand
-DumpDecoderClient::SubmitTag(gcc_unused InputStream *is,
+DumpDecoderClient::SubmitTag([[maybe_unused]] InputStream *is,
 			     Tag &&tag) noexcept
 {
 	fprintf(stderr, "TAG: duration=%f\n", tag.duration.ToDoubleS());
@@ -113,7 +113,7 @@ DumpDecoderClient::SubmitTag(gcc_unused InputStream *is,
 	for (const auto &i : tag)
 		fprintf(stderr, "  %s=%s\n", tag_item_names[i.type], i.value);
 
-	return DecoderCommand::NONE;
+	return GetCommand();
 }
 
 static void
@@ -121,7 +121,7 @@ DumpReplayGainTuple(const char *name, const ReplayGainTuple &tuple) noexcept
 {
 	if (tuple.IsDefined())
 		fprintf(stderr, "replay_gain[%s]: gain=%f peak=%f\n",
-			name, tuple.gain, tuple.peak);
+			name, (double)tuple.gain, (double)tuple.peak);
 }
 
 static void
@@ -139,7 +139,7 @@ DumpDecoderClient::SubmitReplayGain(const ReplayGainInfo *rgi) noexcept
 }
 
 void
-DumpDecoderClient::SubmitMixRamp(gcc_unused MixRampInfo &&mix_ramp) noexcept
+DumpDecoderClient::SubmitMixRamp([[maybe_unused]] MixRampInfo &&mix_ramp) noexcept
 {
 	fprintf(stderr, "MixRamp: start='%s' end='%s'\n",
 		mix_ramp.GetStart(), mix_ramp.GetEnd());

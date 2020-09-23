@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,11 +22,10 @@
 #include "input/InputStream.hxx"
 #include "util/StringView.hxx"
 
+#include <cassert>
+#include <cstdint>
+#include <cstring>
 #include <memory>
-
-#include <stdint.h>
-#include <assert.h>
-#include <string.h>
 
 struct ApeFooter {
 	unsigned char id[8];
@@ -38,7 +37,7 @@ struct ApeFooter {
 };
 
 bool
-tag_ape_scan(InputStream &is, ApeTagCallback callback)
+tag_ape_scan(InputStream &is, const ApeTagCallback& callback)
 try {
 	std::unique_lock<Mutex> lock(is.mutex);
 
@@ -83,7 +82,7 @@ try {
 
 		/* get the key */
 		const char *key = p;
-		const char *key_end = (const char *)memchr(p, '\0', remaining);
+		const char *key_end = (const char *)std::memchr(p, '\0', remaining);
 		if (key_end == nullptr)
 			break;
 

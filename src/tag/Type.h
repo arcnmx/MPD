@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,7 +21,7 @@
 #define MPD_TAG_TYPE_H
 
 #ifdef __cplusplus
-#include <stdint.h>
+#include <cstdint>
 #endif
 
 /**
@@ -49,6 +49,7 @@ enum TagType
 	TAG_ORIGINAL_DATE,
 	TAG_COMPOSER,
 	TAG_PERFORMER,
+	TAG_CONDUCTOR,
 	TAG_WORK,
 	TAG_GROUPING,
 	TAG_COMMENT,

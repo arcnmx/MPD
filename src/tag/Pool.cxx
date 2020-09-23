@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,16 +23,16 @@
 #include "util/VarSize.hxx"
 #include "util/StringView.hxx"
 
+#include <cassert>
+#include <cstdint>
 #include <limits>
 
-#include <assert.h>
 #include <string.h>
 #include <stdlib.h>
-#include <stdint.h>
 
 Mutex tag_pool_lock;
 
-static constexpr size_t NUM_SLOTS = 4093;
+static constexpr size_t NUM_SLOTS = 16127;
 
 struct TagPoolSlot {
 	TagPoolSlot *next;
@@ -114,7 +114,10 @@ tag_pool_get_item(TagType type, StringView value) noexcept
 	auto slot_p = tag_value_slot_p(type, value);
 	for (auto slot = *slot_p; slot != nullptr; slot = slot->next) {
 		if (slot->item.type == type &&
-		    value.Equals(slot->item.value) &&
+		    /* strncmp() only works if there are no null
+		       bytes, which FixTagString() has already ensured
+		       at this point */
+		    strncmp(value.data, slot->item.value, value.size) == 0 &&
 		    slot->ref < TagPoolSlot::MAX_REF) {
 			assert(slot->ref > 0);
 			++slot->ref;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -34,7 +34,7 @@
 #include "Log.hxx"
 
 void
-UpdateWalk::UpdatePlaylistFile(Directory &parent, const char *name,
+UpdateWalk::UpdatePlaylistFile(Directory &parent, std::string_view name,
 			       const StorageFileInfo &info,
 			       const PlaylistPlugin &plugin) noexcept
 {
@@ -88,7 +88,7 @@ UpdateWalk::UpdatePlaylistFile(Directory &parent, const char *name,
 
 bool
 UpdateWalk::UpdatePlaylistFile(Directory &directory,
-			       const char *name, const char *suffix,
+			       std::string_view name, const char *suffix,
 			       const StorageFileInfo &info) noexcept
 {
 	const auto *const plugin = FindPlaylistPluginBySuffix(suffix);

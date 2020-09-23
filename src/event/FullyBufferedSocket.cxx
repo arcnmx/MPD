@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,7 +21,8 @@
 #include "net/SocketError.hxx"
 #include "util/Compiler.h"
 
-#include <assert.h>
+#include <cassert>
+
 #include <string.h>
 
 FullyBufferedSocket::ssize_t
@@ -102,10 +103,7 @@ FullyBufferedSocket::OnSocketReady(unsigned flags) noexcept
 			return false;
 	}
 
-	if (!BufferedSocket::OnSocketReady(flags))
-		return false;
-
-	return true;
+	return BufferedSocket::OnSocketReady(flags);
 }
 
 void

@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -124,7 +124,7 @@ public:
 	explicit NullTagHandler(unsigned _want_mask) noexcept
 		:TagHandler(_want_mask) {}
 
-	void OnDuration(gcc_unused SongTime duration) noexcept override {}
+	void OnDuration([[maybe_unused]] SongTime duration) noexcept override {}
 	void OnTag(TagType type, StringView value) noexcept override;
 	void OnPair(StringView key, StringView value) noexcept override;
 	void OnAudioFormat(AudioFormat af) noexcept override;

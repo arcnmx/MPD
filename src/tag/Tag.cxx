@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,7 +21,7 @@
 #include "Pool.hxx"
 #include "Builder.hxx"
 
-#include <assert.h>
+#include <cassert>
 
 void
 Tag::Clear() noexcept
@@ -42,8 +42,7 @@ Tag::Clear() noexcept
 
 Tag::Tag(const Tag &other) noexcept
 	:duration(other.duration), has_playlist(other.has_playlist),
-	 num_items(other.num_items),
-	 items(nullptr)
+	 num_items(other.num_items)
 {
 	if (num_items > 0) {
 		items = new TagItem *[num_items];

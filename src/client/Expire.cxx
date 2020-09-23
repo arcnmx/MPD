@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -28,7 +28,10 @@ Client::SetExpired() noexcept
 	if (IsExpired())
 		return;
 
-	background_command.reset();
+	if (background_command) {
+		background_command->Cancel();
+		background_command.reset();
+	}
 
 	FullyBufferedSocket::Close();
 	timeout_event.Schedule(std::chrono::steady_clock::duration::zero());

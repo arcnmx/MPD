@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,7 +22,8 @@
 #include "util/ByteOrder.hxx"
 #include "util/DynamicFifoBuffer.hxx"
 
-#include <assert.h>
+#include <cassert>
+
 #include <string.h>
 
 static constexpr uint16_t WAVE_FORMAT_PCM = 1;
@@ -33,7 +34,7 @@ class WaveEncoder final : public Encoder {
 	DynamicFifoBuffer<uint8_t> buffer;
 
 public:
-	WaveEncoder(AudioFormat &audio_format) noexcept;
+	explicit WaveEncoder(AudioFormat &audio_format) noexcept;
 
 	/* virtual methods from class Encoder */
 	void Write(const void *data, size_t length) override;
@@ -49,7 +50,7 @@ class PreparedWaveEncoder final : public PreparedEncoder {
 		return new WaveEncoder(audio_format);
 	}
 
-	const char *GetMimeType() const noexcept override {
+	[[nodiscard]] const char *GetMimeType() const noexcept override {
 		return "audio/wav";
 	}
 };
@@ -97,7 +98,7 @@ fill_wave_header(WaveHeader *header, int channels, int bits,
 }
 
 static PreparedEncoder *
-wave_encoder_init(gcc_unused const ConfigBlock &block)
+wave_encoder_init([[maybe_unused]] const ConfigBlock &block)
 {
 	return new PreparedWaveEncoder();
 }

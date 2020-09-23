@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -32,7 +32,7 @@
 #include "util/DeleteDisposer.hxx"
 #include "config/Net.hxx"
 
-#include <assert.h>
+#include <cassert>
 
 #include <string.h>
 
@@ -50,11 +50,11 @@ HttpdOutput::HttpdOutput(EventLoop &_loop, const ConfigBlock &block)
 	genre = block.GetBlockValue("genre", "Set genre in config");
 	website = block.GetBlockValue("website", "Set website in config");
 
-	clients_max = block.GetBlockValue("max_clients", 0u);
+	clients_max = block.GetBlockValue("max_clients", 0U);
 
 	/* set up bind_to_address */
 
-	ServerSocketAddGeneric(*this, block.GetBlockValue("bind_to_address"), block.GetBlockValue("port", 8000u));
+	ServerSocketAddGeneric(*this, block.GetBlockValue("bind_to_address"), block.GetBlockValue("port", 8000U));
 
 	/* determine content type */
 	content_type = prepared_encoder->GetMimeType();
@@ -121,7 +121,7 @@ HttpdOutput::OnDeferredBroadcast() noexcept
 
 void
 HttpdOutput::OnAccept(UniqueSocketDescriptor fd,
-		      SocketAddress, gcc_unused int uid) noexcept
+		      SocketAddress, [[maybe_unused]] int uid) noexcept
 {
 	/* the listener socket has become readable - a client has
 	   connected */

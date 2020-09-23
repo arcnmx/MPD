@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,7 +23,7 @@
 
 #include "PollGroupPoll.hxx"
 
-#include <assert.h>
+#include <cassert>
 
 PollGroupPoll::PollGroupPoll() noexcept = default;
 PollGroupPoll::~PollGroupPoll() noexcept = default;
@@ -63,7 +63,7 @@ PollGroupPoll::Remove(int fd) noexcept
 {
 	auto item_iter = items.find(fd);
 	assert(item_iter != items.end());
-	auto &item = item_iter->second;
+	const auto &item = item_iter->second;
 	size_t index = item.index;
 	size_t last_index = poll_events.size() - 1;
 	if (index != last_index) {

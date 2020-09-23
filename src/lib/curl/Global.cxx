@@ -35,7 +35,7 @@
 #include "util/RuntimeError.hxx"
 #include "util/Domain.hxx"
 
-#include <assert.h>
+#include <cassert>
 
 static constexpr Domain curlm_domain("curlm");
 
@@ -108,7 +108,7 @@ CurlGlobal::CurlGlobal(EventLoop &_loop)
 }
 
 int
-CurlSocket::SocketFunction(gcc_unused CURL *easy,
+CurlSocket::SocketFunction([[maybe_unused]] CURL *easy,
 			   curl_socket_t s, int action,
 			   void *userp, void *socketp) noexcept
 {
@@ -162,7 +162,6 @@ CurlGlobal::Remove(CurlRequest &r) noexcept
 	assert(GetEventLoop().IsInside());
 
 	curl_multi_remove_handle(multi.Get(), r.Get());
-	InvalidateSockets();
 }
 
 /**
@@ -220,18 +219,18 @@ CurlGlobal::UpdateTimeout(long timeout_ms) noexcept
 		return;
 	}
 
-	if (timeout_ms < 10)
-		/* CURL 7.21.1 likes to report "timeout=0", which
+	if (timeout_ms < 1)
+		/* CURL's threaded resolver sets a timeout of 0ms, which
 		   means we're running in a busy loop.  Quite a bad
 		   idea to waste so much CPU.  Let's use a lower limit
-		   of 10ms. */
-		timeout_ms = 10;
+		   of 1ms. */
+		timeout_ms = 1;
 
 	timeout_event.Schedule(std::chrono::milliseconds(timeout_ms));
 }
 
 int
-CurlGlobal::TimerFunction(gcc_unused CURLM *_multi, long timeout_ms,
+CurlGlobal::TimerFunction([[maybe_unused]] CURLM *_multi, long timeout_ms,
 			  void *userp) noexcept
 {
 	auto &global = *(CurlGlobal *)userp;

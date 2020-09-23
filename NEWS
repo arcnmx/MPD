@@ -1,36 +1,193 @@
-ver 0.22 (not yet released)
+ver 0.22.1 (not yet released)
+
+ver 0.22 (2020/09/23)
 * protocol
   - "findadd"/"searchadd"/"searchaddpl" support the "sort" and
     "window" parameters
   - add command "readpicture" to download embedded pictures
-  - relax the ISO 8601 parser: allow omitting the time of day and the "Z"
-    suffix
+  - command "moveoutput" moves an output between partitions
+  - command "delpartition" deletes a partition
+  - show partition name in "status" response
 * tags
-  - new tags "Grouping" (for ID3 "TIT1") and "Work"
+  - new tags "Grouping" (for ID3 "TIT1"), "Work" and "Conductor"
 * input
   - curl: support "charset" parameter in URI fragment
   - ffmpeg: allow partial reads
-* archive
-  - iso9660: support seeking
+  - io_uring: new plugin for local files on Linux (using liburing)
+  - smbclient: close unused SMB/CIFS connections
+* database
+  - upnp: drop support for libupnp versions older than 1.8
 * playlist
   - cue: integrate contents in database
 * decoder
+  - ffmpeg: support RTSP
   - mad: remove option "gapless", always do gapless
   - sidplay: add option "default_genre"
   - sidplay: map SID name field to "Album" tag
+  - sidplay: add support for new song length format with libsidplayfp 2.0
+  - vorbis, opus: improve seeking accuracy
 * playlist
   - flac: support reading CUE sheets from remote FLAC files
 * filter
   - ffmpeg: new plugin based on FFmpeg's libavfilter library
   - hdcd: new plugin based on FFmpeg's "af_hdcd" for HDCD playback
   - volume: convert S16 to S24 to preserve quality and reduce dithering noise
+  - dsd: add integer-only DSD to PCM converter
 * output
   - jack: add option "auto_destination_ports"
   - jack: report error details
   - pulse: add option "media_role"
+  - solaris: support S8 and S32
 * lower the real-time priority from 50 to 40
 * switch to C++17
-  - GCC 7 or clang 4 (or newer) recommended
+  - GCC 8 or clang 5 (or newer) recommended
+
+ver 0.21.26 (2020/09/21)
+* database
+  - inotify: obey ".mpdignore" files
+* output
+  - osx: fix crash bug
+  - sles: support floating point samples
+* archive
+  - bzip2: fix crash on corrupt bzip2 file
+  - bzip2: flush output at end of input file
+  - iso9660: fix unaligned reads
+  - iso9660: support seeking
+  - zzip: fix crash on corrupt ZIP file
+* decoder
+  - ffmpeg: remove "rtsp://" from the list of supported protocols
+  - ffmpeg: add "hls+http://" to the list of supported protocols
+  - opus: support the gain value from the Opus header
+  - sndfile: fix lost samples at end of file
+* fix "single" mode bug after resuming playback
+* the default log_level is "default", not "info"
+
+ver 0.21.25 (2020/07/06)
+* protocol:
+  - fix crash when using "rangeid" while playing
+* database
+  - simple: automatically scan new mounts
+  - upnp: fix compatibility with Plex DLNA
+* storage
+  - fix disappearing mounts after mounting twice
+  - udisks: fix reading ".mpdignore"
+* input
+  - file: detect premature end of file
+  - smbclient: don't send credentials to MPD clients
+* decoder
+  - opus: apply pre-skip and end trimming
+  - opus: fix memory leak
+  - opus: fix crash bug
+  - vorbis: fix crash bug
+* output
+  - osx: improve sample rate selection
+  - osx: fix noise while stopping
+* neighbor
+  - upnp: fix crash during shutdown
+* Windows/Android:
+  - fix Boost detection after breaking change in Meson 0.54
+
+ver 0.21.24 (2020/06/10)
+* protocol
+  - "tagtypes" requires no permissions
+* database
+  - simple: fix crash when mounting twice
+* decoder
+  - modplug: fix Windows build failure
+  - wildmidi: attempt to detect WildMidi using pkg-config
+  - wildmidi: fix Windows build failure
+* player
+  - don't restart current song if seeking beyond end
+* Android
+  - enable the decoder plugins GME, ModPlug and WildMidi
+  - fix build failure with Android NDK r21
+* Windows
+  - fix stream playback
+  - enable the decoder plugins GME, ModPlug and WildMidi
+  - work around Meson bug breaking the Windows build with GCC 10
+* fix unit test failure
+
+ver 0.21.23 (2020/04/23)
+* protocol
+  - add tag fallback for AlbumSort
+* storage
+  - curl: fix corrupt "href" values in the presence of XML entities
+  - curl: unescape "href" values
+* input
+  - nfs: fix crash bug
+  - nfs: fix freeze bug on reconnect
+* decoder
+  - gme: adapt to API change in the upcoming version 0.7.0
+* output
+  - alsa: implement channel mapping for 5.0 and 7.0
+* player
+  - drain outputs at end of song in "single" mode
+* Windows
+  - fix case insensitive search
+
+ver 0.21.22 (2020/04/02)
+* database
+  - simple: optimize startup
+* input
+  - curl: fix streaming errors on Android
+* playlist
+  - rss: support MIME type application/xml
+* mixer
+  - android: new mixer plugin for "sles" output
+* Android
+  - TV support
+* Windows
+  - fix time zone offset check
+* fix build failures with uClibc-ng
+
+ver 0.21.21 (2020/03/19)
+* configuration
+  - fix bug in "metadata_to_use" setting
+* playlist
+  - asx, xspf: fix corrupt tags in the presence of XML entities
+* archive
+  - iso9660: skip empty file names to work around libcdio bug
+* decoder
+  - gme: ignore empty tags
+* output
+  - solaris: port to NetBSD
+* raise default "max_connections" value to 100
+
+ver 0.21.20 (2020/02/16)
+* decoder
+  - audiofile, ffmpeg, sndfile: handle MIME type "audio/wav"
+  - ffmpeg: fix playback of AIFF and TTA
+  - vorbis, opus: fix seeking in small files
+* fix backwards seeking on ARM (and other non-x86 CPUs)
+
+ver 0.21.19 (2020/01/17)
+* configuration
+  - allow overriding top-level settings in includes
+* output
+  - pulse: obey Pulse's maximum sample rate (fixes DSD128 playback)
+* fix build failure with clang 10
+* fix build failure with Android NDK r20
+
+ver 0.21.18 (2019/12/24)
+* protocol
+  - work around Mac OS X bug in the ISO 8601 parser
+* output
+  - alsa: fix hang bug with ALSA "null" outputs
+* storage
+  - curl: fix crash bug
+* drop support for CURL versions older than 7.32.0
+* reduce unnecessary CPU wakeups
+
+ver 0.21.17 (2019/12/16)
+* protocol
+  - relax the ISO 8601 parser: allow omitting field separators, the
+    time of day and the "Z" suffix
+* archive
+  - zzip: improve error reporting
+* outputs
+  - jack: mark ports as terminal
+  - shout: declare metadata as UTF-8
+* fix build failure with -Ddatabase=false
 
 ver 0.21.16 (2019/10/16)
 * queue

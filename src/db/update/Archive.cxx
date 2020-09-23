@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -38,14 +38,14 @@
 #include <string.h>
 
 static Directory *
-LockMakeChild(Directory &directory, const char *name) noexcept
+LockMakeChild(Directory &directory, std::string_view name) noexcept
 {
 	const ScopeDatabaseLock protect;
 	return directory.MakeChild(name);
 }
 
 static Song *
-LockFindSong(Directory &directory, const char *name) noexcept
+LockFindSong(Directory &directory, std::string_view name) noexcept
 {
 	const ScopeDatabaseLock protect;
 	return directory.FindSong(name);
@@ -55,12 +55,11 @@ void
 UpdateWalk::UpdateArchiveTree(ArchiveFile &archive, Directory &directory,
 			      const char *name) noexcept
 {
-	const char *tmp = strchr(name, '/');
+	const char *tmp = std::strchr(name, '/');
 	if (tmp) {
-		const std::string child_name(name, tmp);
+		const std::string_view child_name(name, tmp - name);
 		//add dir is not there already
-		Directory *subdir = LockMakeChild(directory,
-						  child_name.c_str());
+		Directory *subdir = LockMakeChild(directory, child_name);
 		subdir->device = DEVICE_INARCHIVE;
 
 		//create directories first
@@ -83,8 +82,8 @@ UpdateWalk::UpdateArchiveTree(ArchiveFile &archive, Directory &directory,
 				}
 
 				modified = true;
-				FormatDefault(update_domain, "added %s/%s",
-					      directory.GetPath(), name);
+				FormatNotice(update_domain, "added %s/%s",
+					     directory.GetPath(), name);
 			}
 		} else {
 			if (!song->UpdateFileInArchive(archive)) {
@@ -107,7 +106,7 @@ class UpdateArchiveVisitor final : public ArchiveVisitor {
 			     Directory &_directory) noexcept
 		:walk(_walk), archive(_archive), directory(_directory) {}
 
-	virtual void VisitArchiveEntry(const char *path_utf8) override {
+	void VisitArchiveEntry(const char *path_utf8) override {
 		FormatDebug(update_domain,
 			    "adding archive file: %s", path_utf8);
 		walk.UpdateArchiveTree(archive, directory, path_utf8);
@@ -123,7 +122,7 @@ class UpdateArchiveVisitor final : public ArchiveVisitor {
  * @param plugin the archive plugin which fits this archive type
  */
 void
-UpdateWalk::UpdateArchiveFile(Directory &parent, const char *name,
+UpdateWalk::UpdateArchiveFile(Directory &parent, std::string_view name,
 			      const StorageFileInfo &info,
 			      const ArchivePlugin &plugin) noexcept
 {
@@ -158,7 +157,7 @@ UpdateWalk::UpdateArchiveFile(Directory &parent, const char *name,
 
 bool
 UpdateWalk::UpdateArchiveFile(Directory &directory,
-			      const char *name, const char *suffix,
+			      std::string_view name, const char *suffix,
 			      const StorageFileInfo &info) noexcept
 {
 	const ArchivePlugin *plugin = archive_plugin_from_suffix(suffix);

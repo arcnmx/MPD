@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,13 +22,14 @@
 #include "util/Compiler.h"
 #include "system/Error.hxx"
 
-#include <errno.h>
+#include <cerrno>
+
 #include <stdio.h>
 
 static size_t
 FlacIORead(void *ptr, size_t size, size_t nmemb, FLAC__IOHandle handle)
 {
-	InputStream *is = (InputStream *)handle;
+	auto *is = (InputStream *)handle;
 
 	uint8_t *const p0 = (uint8_t *)ptr, *p = p0,
 		*const end = p0 + size * nmemb;
@@ -70,7 +71,7 @@ FlacIORead(void *ptr, size_t size, size_t nmemb, FLAC__IOHandle handle)
 static int
 FlacIOSeek(FLAC__IOHandle handle, FLAC__int64 _offset, int whence)
 {
-	InputStream *is = (InputStream *)handle;
+	auto *is = (InputStream *)handle;
 
 	offset_type offset = _offset;
 	switch (whence) {
@@ -104,7 +105,7 @@ FlacIOSeek(FLAC__IOHandle handle, FLAC__int64 _offset, int whence)
 static FLAC__int64
 FlacIOTell(FLAC__IOHandle handle)
 {
-	InputStream *is = (InputStream *)handle;
+	auto *is = (InputStream *)handle;
 
 	return is->GetOffset();
 }
@@ -112,13 +113,13 @@ FlacIOTell(FLAC__IOHandle handle)
 static int
 FlacIOEof(FLAC__IOHandle handle)
 {
-	InputStream *is = (InputStream *)handle;
+	auto *is = (InputStream *)handle;
 
 	return is->LockIsEOF();
 }
 
 static int
-FlacIOClose(gcc_unused FLAC__IOHandle handle)
+FlacIOClose([[maybe_unused]] FLAC__IOHandle handle)
 {
 	/* no-op because the libFLAC caller is responsible for closing
 	   the #InputStream */

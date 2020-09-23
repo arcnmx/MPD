@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,7 +18,7 @@
  */
 
 #include "SongSave.hxx"
-#include "AudioParser.hxx"
+#include "pcm/AudioParser.hxx"
 #include "db/plugins/simple/Song.hxx"
 #include "song/DetachedSong.hxx"
 #include "TagSave.hxx"
@@ -96,7 +96,7 @@ song_load(TextFile &file, const char *uri,
 	char *line;
 	while ((line = file.ReadLine()) != nullptr &&
 	       !StringIsEqual(line, SONG_END)) {
-		char *colon = strchr(line, ':');
+		char *colon = std::strchr(line, ':');
 		if (colon == nullptr || colon == line) {
 			throw FormatRuntimeError("unknown line in db: %s", line);
 		}

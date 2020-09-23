@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,7 +22,9 @@
 
 #include "util/Compiler.h"
 
-#include <forward_list>
+#include <forward_list>  // IWYU pragma: export
+#include <set>
+#include <string>
 
 struct ConfigBlock;
 class InputStream;
@@ -51,6 +53,16 @@ struct DecoderPlugin {
 	void (*finish)() noexcept = nullptr;
 
 	/**
+	 * Return a set of supported protocols.
+	 */
+	std::set<std::string> (*protocols)() noexcept = nullptr;
+
+	/**
+	 * Decode an URI with a protocol listed in protocols().
+	 */
+	void (*uri_decode)(DecoderClient &client, const char *uri) = nullptr;
+
+	/**
 	 * Decode a stream (data read from an #InputStream object).
 	 *
 	 * Either implement this method or file_decode().  If
@@ -67,18 +79,22 @@ struct DecoderPlugin {
 	void (*file_decode)(DecoderClient &client, Path path_fs) = nullptr;
 
 	/**
-	 * Scan metadata of a file.
+         * Scan metadata of a file.
+         *
+	 * Throws on I/O error.
 	 *
-	 * @return false if the operation has failed
+	 * @return false if the file was not recognized
 	 */
-	bool (*scan_file)(Path path_fs, TagHandler &handler) noexcept = nullptr;
+	bool (*scan_file)(Path path_fs, TagHandler &handler) = nullptr;
 
 	/**
-	 * Scan metadata of a file.
+	 * Scan metadata of a stream.
+         *
+	 * Throws on I/O error.
 	 *
-	 * @return false if the operation has failed
+	 * @return false if the stream was not recognized
 	 */
-	bool (*scan_stream)(InputStream &is, TagHandler &handler) noexcept = nullptr;
+	bool (*scan_stream)(InputStream &is, TagHandler &handler) = nullptr;
 
 	/**
 	 * @brief Return a "virtual" filename for subtracks in
@@ -99,14 +115,14 @@ struct DecoderPlugin {
 				void (*_file_decode)(DecoderClient &client,
 						     Path path_fs),
 				bool (*_scan_file)(Path path_fs,
-						   TagHandler &handler) noexcept) noexcept
+						   TagHandler &handler)) noexcept
 		:name(_name),
 		 file_decode(_file_decode), scan_file(_scan_file) {}
 
 	constexpr DecoderPlugin(const char *_name,
 				void (*_stream_decode)(DecoderClient &client,
 						       InputStream &is),
-				bool (*_scan_stream)(InputStream &is, TagHandler &handler) noexcept) noexcept
+				bool (*_scan_stream)(InputStream &is, TagHandler &handler)) noexcept
 		:name(_name),
 		 stream_decode(_stream_decode),
 		 scan_stream(_scan_stream) {}
@@ -114,11 +130,11 @@ struct DecoderPlugin {
 	constexpr DecoderPlugin(const char *_name,
 				void (*_stream_decode)(DecoderClient &client,
 						       InputStream &is),
-				bool (*_scan_stream)(InputStream &is, TagHandler &handler) noexcept,
+				bool (*_scan_stream)(InputStream &is, TagHandler &handler),
 				void (*_file_decode)(DecoderClient &client,
 						     Path path_fs),
 				bool (*_scan_file)(Path path_fs,
-						   TagHandler &handler) noexcept) noexcept
+						   TagHandler &handler)) noexcept
 		:name(_name),
 		 stream_decode(_stream_decode),
 		 file_decode(_file_decode),
@@ -136,6 +152,14 @@ struct DecoderPlugin {
 	constexpr auto WithContainer(std::forward_list<DetachedSong> (*_container_scan)(Path path_fs)) noexcept {
 		auto copy = *this;
 		copy.container_scan = _container_scan;
+		return copy;
+	}
+
+	constexpr auto WithProtocols(std::set<std::string> (*_protocols)() noexcept,
+				     void (*_uri_decode)(DecoderClient &client, const char *uri)) noexcept {
+		auto copy = *this;
+		copy.protocols = _protocols;
+		copy.uri_decode = _uri_decode;
 		return copy;
 	}
 
@@ -180,6 +204,13 @@ struct DecoderPlugin {
 	}
 
 	/**
+	 * Decode an URI which is supported (check SupportsUri()).
+	 */
+	void UriDecode(DecoderClient &client, const char *uri) const {
+		uri_decode(client, uri);
+	}
+
+	/**
 	 * Decode a file.
 	 */
 	template<typename P>
@@ -191,7 +222,7 @@ struct DecoderPlugin {
 	 * Read the tag of a file.
 	 */
 	template<typename P>
-	bool ScanFile(P path_fs, TagHandler &handler) const noexcept {
+	bool ScanFile(P path_fs, TagHandler &handler) const {
 		return scan_file != nullptr
 			? scan_file(path_fs, handler)
 			: false;
@@ -200,7 +231,7 @@ struct DecoderPlugin {
 	/**
 	 * Read the tag of a stream.
 	 */
-	bool ScanStream(InputStream &is, TagHandler &handler) const noexcept {
+	bool ScanStream(InputStream &is, TagHandler &handler) const {
 		return scan_stream != nullptr
 			? scan_stream(is, handler)
 			: false;
@@ -213,6 +244,9 @@ struct DecoderPlugin {
 	char *ContainerScan(P path, const unsigned int tnum) const {
 		return container_scan(path, tnum);
 	}
+
+	gcc_pure
+	bool SupportsUri(const char *uri) const noexcept;
 
 	/**
 	 * Does the plugin announce the specified file name suffix?

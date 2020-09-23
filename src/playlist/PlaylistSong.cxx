@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -40,6 +40,13 @@ merge_song_metadata(DetachedSong &add, const DetachedSong &base) noexcept
 	}
 
 	add.SetLastModified(base.GetLastModified());
+
+	if (add.GetStartTime().IsZero()) {
+		add.SetStartTime(base.GetStartTime());
+	}
+	if (add.GetEndTime().IsZero()) {
+		add.SetEndTime(base.GetEndTime());
+	}
 }
 
 static bool
@@ -58,20 +65,20 @@ try {
 }
 
 bool
-playlist_check_translate_song(DetachedSong &song, const char *base_uri,
+playlist_check_translate_song(DetachedSong &song, std::string_view base_uri,
 			      const SongLoader &loader) noexcept
 {
-	if (base_uri != nullptr && strcmp(base_uri, ".") == 0)
+	if (base_uri.compare(".") == 0)
 		/* PathTraitsUTF8::GetParent() returns "." when there
 		   is no directory name in the given path; clear that
 		   now, because it would break the database lookup
 		   functions */
-		base_uri = nullptr;
+		base_uri = {};
 
 	const char *uri = song.GetURI();
 
 #ifdef _WIN32
-	if (!PathTraitsUTF8::IsAbsolute(uri) && strchr(uri, '\\') != nullptr) {
+	if (!PathTraitsUTF8::IsAbsolute(uri) && std::strchr(uri, '\\') != nullptr) {
 		/* Windows uses the backslash as path separator, but
 		   the MPD protocol uses the (forward) slash by
 		   definition; to allow backslashes in relative URIs
@@ -85,7 +92,7 @@ playlist_check_translate_song(DetachedSong &song, const char *base_uri,
 	}
 #endif
 
-	if (base_uri != nullptr && !uri_has_scheme(uri) &&
+	if (base_uri.data() != nullptr && !uri_has_scheme(uri) &&
 	    !PathTraitsUTF8::IsAbsolute(uri))
 		song.SetURI(PathTraitsUTF8::Build(base_uri, uri));
 

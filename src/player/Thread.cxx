@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -46,6 +46,7 @@
 #include "CrossFade.hxx"
 #include "tag/Tag.hxx"
 #include "Idle.hxx"
+#include "util/Compiler.h"
 #include "util/Domain.hxx"
 #include "thread/Name.hxx"
 #include "Log.hxx"
@@ -223,7 +224,8 @@ private:
 	 * Caller must lock the mutex.
 	 */
 	void StartDecoder(std::unique_lock<Mutex> &lock,
-			  std::shared_ptr<MusicPipe> pipe) noexcept;
+			  std::shared_ptr<MusicPipe> pipe,
+			  bool initial_seek_essential) noexcept;
 
 	/**
 	 * The decoder has acknowledged the "START" command (see
@@ -251,7 +253,7 @@ private:
 	 * Note: this function does not check if the decoder is already
 	 * finished.
 	 */
-	gcc_pure
+	[[nodiscard]] gcc_pure
 	bool IsDecoderAtCurrentSong() const noexcept {
 		assert(pipe != nullptr);
 
@@ -263,7 +265,7 @@ private:
 	 * decoding it, or has finished doing it), and the player hasn't
 	 * switched to that song yet.
 	 */
-	gcc_pure
+	[[nodiscard]] gcc_pure
 	bool IsDecoderAtNextSong() const noexcept {
 		return dc.pipe != nullptr && !IsDecoderAtCurrentSong();
 	}
@@ -366,7 +368,8 @@ public:
 
 void
 Player::StartDecoder(std::unique_lock<Mutex> &lock,
-		     std::shared_ptr<MusicPipe> _pipe) noexcept
+		     std::shared_ptr<MusicPipe> _pipe,
+		     bool initial_seek_essential) noexcept
 {
 	assert(queued || pc.command == PlayerCommand::SEEK);
 	assert(pc.next_song != nullptr);
@@ -378,6 +381,7 @@ Player::StartDecoder(std::unique_lock<Mutex> &lock,
 
 	dc.Start(lock, std::make_unique<DetachedSong>(*pc.next_song),
 		 start_time, pc.next_song->GetEndTime(),
+		 initial_seek_essential,
 		 buffer, std::move(_pipe));
 }
 
@@ -439,7 +443,7 @@ Player::ActivateDecoder() noexcept
 	pc.audio_format.Clear();
 
 	{
-		/* call syncPlaylistWithQueue() in the main thread */
+		/* call playlist::SyncWithPlayer() in the main thread */
 		const ScopeUnlock unlock(pc.mutex);
 		pc.listener.OnPlayerSync();
 	}
@@ -635,7 +639,7 @@ Player::SeekDecoder(std::unique_lock<Mutex> &lock) noexcept
 		pipe->Clear();
 
 		/* re-start the decoder */
-		StartDecoder(lock, pipe);
+		StartDecoder(lock, pipe, true);
 		ActivateDecoder();
 
 		pc.seeking = true;
@@ -680,6 +684,12 @@ Player::SeekDecoder(std::unique_lock<Mutex> &lock) noexcept
 	/* re-fill the buffer after seeking */
 	buffering = true;
 
+	{
+		/* call syncPlaylistWithQueue() in the main thread */
+		const ScopeUnlock unlock(pc.mutex);
+		pc.listener.OnPlayerSync();
+	}
+
 	return true;
 }
 
@@ -713,7 +723,8 @@ Player::ProcessCommand(std::unique_lock<Mutex> &lock) noexcept
 		pc.CommandFinished();
 
 		if (dc.IsIdle())
-			StartDecoder(lock, std::make_shared<MusicPipe>());
+			StartDecoder(lock, std::make_shared<MusicPipe>(),
+				     false);
 
 		break;
 
@@ -953,7 +964,7 @@ Player::SongBorder() noexcept
 	{
 		const ScopeUnlock unlock(pc.mutex);
 
-		FormatDefault(player_domain, "played \"%s\"", song->GetURI());
+		FormatNotice(player_domain, "played \"%s\"", song->GetURI());
 
 		ReplacePipe(dc.pipe);
 
@@ -966,6 +977,12 @@ Player::SongBorder() noexcept
 	if (border_pause) {
 		paused = true;
 		pc.listener.OnBorderPause();
+
+		/* drain all outputs to guarantee the current song is
+		   really being played to the end; without this, the
+		   Pause() call would drop all ring buffers */
+		pc.outputs.Drain();
+
 		pc.outputs.Pause();
 		idle_add(IDLE_PLAYER);
 	}
@@ -978,7 +995,7 @@ Player::Run() noexcept
 
 	std::unique_lock<Mutex> lock(pc.mutex);
 
-	StartDecoder(lock, pipe);
+	StartDecoder(lock, pipe, true);
 	ActivateDecoder();
 
 	pc.state = PlayerState::PLAY;
@@ -1018,7 +1035,8 @@ Player::Run() noexcept
 
 			assert(dc.pipe == nullptr || dc.pipe == pipe);
 
-			StartDecoder(lock, std::make_shared<MusicPipe>());
+			StartDecoder(lock, std::make_shared<MusicPipe>(),
+				     false);
 		}
 
 		if (/* no cross-fading if MPD is going to pause at the
@@ -1117,7 +1135,7 @@ Player::Run() noexcept
 	cross_fade_tag.reset();
 
 	if (song != nullptr) {
-		FormatDefault(player_domain, "played \"%s\"", song->GetURI());
+		FormatNotice(player_domain, "played \"%s\"", song->GetURI());
 		song.reset();
 	}
 
@@ -1154,7 +1172,7 @@ try {
 
 	std::unique_lock<Mutex> lock(mutex);
 
-	while (1) {
+	while (true) {
 		switch (command) {
 		case PlayerCommand::SEEK:
 		case PlayerCommand::QUEUE:
@@ -1163,6 +1181,11 @@ try {
 			{
 				const ScopeUnlock unlock(mutex);
 				do_play(*this, dc, buffer);
+
+				/* give the main thread a chance to
+				   queue another song, just in case
+				   we've stopped playback
+				   spuriously */
 				listener.OnPlayerSync();
 			}
 
@@ -1175,6 +1198,9 @@ try {
 			}
 
 			/* fall through */
+#if CLANG_OR_GCC_VERSION(7,0)
+			[[fallthrough]];
+#endif
 
 		case PlayerCommand::PAUSE:
 			next_song.reset();

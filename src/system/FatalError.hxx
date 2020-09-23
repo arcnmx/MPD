@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -29,11 +29,11 @@
 /**
  * Log the specified message and abort the process.
  */
-gcc_noreturn
+[[noreturn]]
 void
 FatalError(const char *msg);
 
-gcc_noreturn
+[[noreturn]]
 void
 FormatFatalError(const char *fmt, ...);
 
@@ -42,19 +42,19 @@ FormatFatalError(const char *fmt, ...);
  * fail.  Prints the given message, the system error message (from
  * errno or GetLastError()) and abort the process.
  */
-gcc_noreturn
+[[noreturn]]
 void
 FatalSystemError(const char *msg);
 
 #ifdef _WIN32
 
-gcc_noreturn
+[[noreturn]]
 void
 FatalSystemError(const char *msg, DWORD code);
 
 #endif
 
-gcc_noreturn
+[[noreturn]]
 void
 FormatFatalSystemError(const char *fmt, ...);
 

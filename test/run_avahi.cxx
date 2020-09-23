@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -26,7 +26,7 @@
 unsigned listen_port = 1234;
 
 int
-main(gcc_unused int argc, gcc_unused char **argv)
+main([[maybe_unused]] int argc, [[maybe_unused]] char **argv)
 {
 	EventLoop event_loop;
 	const ShutdownHandler shutdown_handler(event_loop);

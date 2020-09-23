@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -17,7 +17,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "config.h"
 #include "VorbisDecoderPlugin.h"
 #include "OggDecoder.hxx"
 #include "lib/xiph/VorbisComments.hxx"
@@ -25,12 +24,13 @@
 #include "lib/xiph/OggFind.hxx"
 #include "VorbisDomain.hxx"
 #include "../DecoderAPI.hxx"
+#include "decoder/Features.h"
 #include "input/InputStream.hxx"
 #include "input/Reader.hxx"
 #include "OggCodec.hxx"
+#include "pcm/CheckAudioFormat.hxx"
 #include "pcm/Interleave.hxx"
 #include "util/ScopeExit.hxx"
-#include "CheckAudioFormat.hxx"
 #include "tag/Handler.hxx"
 #include "Log.hxx"
 
@@ -50,8 +50,8 @@ class VorbisDecoder final : public OggDecoder {
 	typedef int16_t out_sample_t;
 #else
 	static constexpr SampleFormat sample_format = SampleFormat::FLOAT;
-	typedef float in_sample_t;
-	typedef float out_sample_t;
+	using in_sample_t = float;
+	using out_sample_t = float;
 #endif
 
 	unsigned remaining_header_packets;
@@ -86,7 +86,7 @@ public:
 		return ::CheckAudioFormat(vi.rate, sample_format, vi.channels);
 	}
 
-	AudioFormat CheckAudioFormat() const {
+	[[nodiscard]] AudioFormat CheckAudioFormat() const {
 		return CheckAudioFormat(vi);
 	}
 
@@ -146,7 +146,7 @@ void
 VorbisDecoder::OnOggBeginning(const ogg_packet &_packet)
 {
 	/* libvorbis wants non-const packets */
-	ogg_packet &packet = const_cast<ogg_packet &>(_packet);
+	auto &packet = const_cast<ogg_packet &>(_packet);
 
 	ReinitVorbis();
 
@@ -251,7 +251,7 @@ void
 VorbisDecoder::OnOggPacket(const ogg_packet &_packet)
 {
 	/* libvorbis wants non-const packets */
-	ogg_packet &packet = const_cast<ogg_packet &>(_packet);
+	auto &packet = const_cast<ogg_packet &>(_packet);
 
 	if (remaining_header_packets > 0) {
 		if (vorbis_synthesis_headerin(&vi, &vc, &packet) != 0)
@@ -311,7 +311,7 @@ VorbisDecoder::OnOggEnd()
 /* public */
 
 static bool
-vorbis_init(gcc_unused const ConfigBlock &block)
+vorbis_init([[maybe_unused]] const ConfigBlock &block)
 {
 #ifndef HAVE_TREMOR
 	LogDebug(vorbis_domain, vorbis_version_string());
@@ -370,7 +370,7 @@ VisitVorbisDuration(InputStream &is,
 }
 
 static bool
-vorbis_scan_stream(InputStream &is, TagHandler &handler) noexcept
+vorbis_scan_stream(InputStream &is, TagHandler &handler)
 {
 	/* initialize libogg */
 

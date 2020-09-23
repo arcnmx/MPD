@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2019 The Music Player Daemon Project
+ * Copyright 2003-2020 The Music Player Daemon Project
  * http://www.musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,18 +21,17 @@
 #define AUDIO_OUTPUT_SOURCE_HXX
 
 #include "SharedPipeConsumer.hxx"
-#include "AudioFormat.hxx"
 #include "ReplayGainMode.hxx"
+#include "pcm/AudioFormat.hxx"
 #include "pcm/Buffer.hxx"
 #include "pcm/Dither.hxx"
 #include "thread/Mutex.hxx"
 #include "util/ConstBuffer.hxx"
 
-#include <utility>
+#include <cassert>
+#include <cstdint>
 #include <memory>
-
-#include <assert.h>
-#include <stdint.h>
+#include <utility>
 
 struct MusicChunk;
 struct Tag;
