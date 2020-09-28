@@ -91,7 +91,7 @@ size_t YtdlInputStream::Read(std::unique_lock<Mutex> &lock, void *ptr, size_t sz
 	}
 }
 
-void YtdlInputStream::OnComplete(Ytdl::YtdlMonitor* monitor) {
+void YtdlInputStream::OnComplete([[maybe_unused]] Ytdl::YtdlMonitor* monitor) {
 	const std::lock_guard<Mutex> protect(mutex);
 	try {
 		tag = context->GetMetadata().GetTagBuilder().CommitNew();
@@ -104,7 +104,7 @@ void YtdlInputStream::OnComplete(Ytdl::YtdlMonitor* monitor) {
 	context = nullptr;
 }
 
-void YtdlInputStream::OnError(Ytdl::YtdlMonitor* monitor, std::exception_ptr e) {
+void YtdlInputStream::OnError([[maybe_unused]] Ytdl::YtdlMonitor* monitor, std::exception_ptr e) {
 	const std::lock_guard<Mutex> protect(mutex);
 	pending_exception = e;
 	context = nullptr;
