@@ -137,7 +137,7 @@ YtdlProcess::Process()
 }
 
 bool
-YtdlMonitor::OnSocketReady(unsigned flags) noexcept
+YtdlMonitor::OnSocketReady([[maybe_unused]] unsigned flags) noexcept
 {
 	try {
 		// TODO: repeatedly call Process and wait for EWOULDBLOCK?

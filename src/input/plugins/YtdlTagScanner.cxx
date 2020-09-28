@@ -21,10 +21,10 @@ YtdlTagScanner::Start()
 	}
 }
 
-void YtdlTagScanner::OnComplete(Ytdl::YtdlMonitor* monitor) {
+void YtdlTagScanner::OnComplete([[maybe_unused]] Ytdl::YtdlMonitor* monitor) {
 	handler.OnRemoteTag(context->GetMetadata().GetTagBuilder().Commit());
 }
 
-void YtdlTagScanner::OnError(Ytdl::YtdlMonitor* monitor, std::exception_ptr e) {
+void YtdlTagScanner::OnError([[maybe_unused]] Ytdl::YtdlMonitor* monitor, std::exception_ptr e) {
 	handler.OnRemoteTagError(e);
 }
