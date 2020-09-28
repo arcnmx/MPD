@@ -47,6 +47,7 @@ class ParserContext {
 			case ParseContinue::CANCEL:
 				return 0;
 		}
+		return 0;
 	}
 
 public:
