@@ -94,12 +94,18 @@ size_t YtdlInputStream::Read(std::unique_lock<Mutex> &lock, void *ptr, size_t sz
 void YtdlInputStream::OnComplete([[maybe_unused]] Ytdl::YtdlMonitor* monitor) {
 	const std::lock_guard<Mutex> protect(mutex);
 	try {
+		// Don't attempt to play playlist url
+		if (context->GetMetadata().GetType() == "playlist") {
+			throw std::runtime_error("attempting to play playlist url");
+		}
+
 		tag = context->GetMetadata().GetTagBuilder().CommitNew();
 		inner = OpenCurlInputStream(context->GetMetadata().GetURL().c_str(),
 			context->GetMetadata().GetHeaders(), mutex);
 		inner->SetHandler(this);
 	} catch (...) {
 		pending_exception = std::current_exception();
+		SetReady(); // Notify the handler so it doesn't stuck waiting
 	}
 	context = nullptr;
 }
