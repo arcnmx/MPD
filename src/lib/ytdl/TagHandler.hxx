@@ -66,6 +66,10 @@ public:
 		return extractor;
 	}
 
+	const std::string &GetType() const noexcept {
+		return type;
+	}
+
 	TagBuilder& GetTagBuilder() {
 		return *builder;
 	}
