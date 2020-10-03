@@ -64,15 +64,12 @@ YtdlProcess::Invoke(Yajl::Handle &handle, const char *url, PlaylistMode mode)
 				playlist_flag = "--no-playlist";
 				break;
 			case PlaylistMode::FLAT:
-				playlist_flag = "--flat-playlist";
-				break;
-			case PlaylistMode::FULL:
 				playlist_flag = "--yes-playlist";
 				break;
 		}
 
 		if (execlp("youtube-dl", "youtube-dl",
-			"-Jf", "bestaudio/best", playlist_flag, url, nullptr) < 0)
+			"-Jf", "bestaudio/best", "--flat-playlist", playlist_flag, url, nullptr) < 0)
 		{
 			_exit(EXIT_FAILURE);
 		}
