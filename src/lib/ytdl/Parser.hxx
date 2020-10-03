@@ -15,7 +15,6 @@ class YtdlMonitor;
 enum class PlaylistMode {
 	SINGLE,
 	FLAT,
-	FULL,
 };
 
 class Parser {
