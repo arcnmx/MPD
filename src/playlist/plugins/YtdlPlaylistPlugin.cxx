@@ -56,13 +56,13 @@ playlist_ytdl_open_uri(const char *uri, [[maybe_unused]] Mutex &mutex)
 		url.insert(0, "ytdl://");
 		songs.emplace_front(url.c_str(), std::move(playlist));
 	} else {
+		// The entries are reversed already, so don't need to reverse in the end
 		for (auto &entry : metadata.GetEntries()) {
 			std::string url = entry.GetWebpageURL().empty()
 				? entry.GetURL() : entry.GetWebpageURL();
 			url.insert(0, "ytdl://");
 			songs.emplace_front(url.c_str(), entry.GetTagBuilder().Commit());
 		}
-		songs.reverse();
 	}
 
 	return std::make_unique<MemorySongEnumerator>(std::move(songs));
