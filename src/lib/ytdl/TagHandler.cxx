@@ -17,7 +17,7 @@ TagHandler::SortEntries()
 		inline bool
 		operator() (const TagHandler& tag0, const TagHandler& tag1)
 		{
-			return tag0.playlist_index < tag1.playlist_index;
+			return tag0.playlist_index > tag1.playlist_index;
 		}
 	};
 
