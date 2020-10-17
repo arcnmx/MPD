@@ -327,6 +327,20 @@ e.g.:
      - The Tidal "audioquality" parameter. Possible values: HI_RES, LOSSLESS, HIGH, LOW. Default is HIGH.
 
 .. _decoder_plugins:
+
+youtube-dl
+----------
+
+Play URLs supported by `youtube-dl <http://ytdl-org.github.io/youtube-dl/>`_.
+By default, it plays http/https URLs from ``youtu.be``, ``www.youtube.com``,
+``soundcloud.com``, and ``www.twitch.tv``. To play other URLs, prepend ``ytdl://``
+in front of it.
+
+You can find the list of supported platform `here <https://ytdl-org.github.io/youtube-dl/supportedsites.html>`_.
+
+.. code-block:: none
+
+   mpc add ytdl://https://www.youtube.com/watch?v=saDmN2f3HI0
      
 Decoder plugins
 ===============
@@ -1290,6 +1304,20 @@ Download playlist from SoundCloud. It accepts URIs starting with soundcloud://.
 xspf
 ----
 Reads XSPF playlist files. 
+
+youtube-dl
+----------
+
+Read playlist from URLs supported by `youtube-dl <http://ytdl-org.github.io/youtube-dl/>`_.
+By default, it reads http/https URLs from ``youtu.be``, ``www.youtube.com``,
+``soundcloud.com``, and ``www.twitch.tv``. To read other URLs, prepend ``ytdl://``
+in front of it.
+
+You can find the list of supported platform `here <https://ytdl-org.github.io/youtube-dl/supportedsites.html>`_.
+
+.. code-block:: none
+
+   mpc load ytdl://https://www.youtube.com/playlist?list=PLczA8pMWxlsFUFEtlc6MuucBX-OmKPKkN
 
 
 Archive plugins
