@@ -331,17 +331,13 @@ e.g.:
 youtube-dl
 ----------
 
-Play URLs supported by `youtube-dl <http://ytdl-org.github.io/youtube-dl/>`_.
-By default, it plays http/https URLs from ``youtu.be``, ``www.youtube.com``,
-``soundcloud.com``, and ``www.twitch.tv``. To play other URLs, prepend ``ytdl://``
-in front of it.
-
-You can find the list of supported platform `here <https://ytdl-org.github.io/youtube-dl/supportedsites.html>`_.
+This plugin can play links from YouTube directly. To play songs from other `supported sites <https://ytdl-org.github.io/youtube-dl/supportedsites.html>`_, prepend ``ytdl://`` in front of the URL.
 
 .. code-block:: none
 
-   mpc add ytdl://https://www.youtube.com/watch?v=saDmN2f3HI0
-     
+   mpc add https://www.youtube.com/watch?v=saDmN2f3HI0
+   mpc add ytdl://https://www.twitch.tv/monstercat
+
 Decoder plugins
 ===============
 
@@ -1294,16 +1290,11 @@ Reads XSPF playlist files.
 youtube-dl
 ----------
 
-Read playlist from URLs supported by `youtube-dl <http://ytdl-org.github.io/youtube-dl/>`_.
-By default, it reads http/https URLs from ``youtu.be``, ``www.youtube.com``,
-``soundcloud.com``, and ``www.twitch.tv``. To read other URLs, prepend ``ytdl://``
-in front of it.
-
-You can find the list of supported platform `here <https://ytdl-org.github.io/youtube-dl/supportedsites.html>`_.
+This plugin can play links from YouTube directly. To play songs from other `supported sites <https://ytdl-org.github.io/youtube-dl/supportedsites.html>`_, prepend ``ytdl://`` in front of the URL.
 
 .. code-block:: none
 
-   mpc load ytdl://https://www.youtube.com/playlist?list=PLczA8pMWxlsFUFEtlc6MuucBX-OmKPKkN
+   mpc load https://www.youtube.com/playlist?list=PLczA8pMWxlsFUFEtlc6MuucBX-OmKPKkN
 
 
 Archive plugins
