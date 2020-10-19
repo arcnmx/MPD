@@ -114,6 +114,7 @@ void YtdlInputStream::OnError([[maybe_unused]] Ytdl::YtdlMonitor* monitor, std::
 	const std::lock_guard<Mutex> protect(mutex);
 	pending_exception = e;
 	context = nullptr;
+	SetReady();
 }
 
 void YtdlInputStream::OnInputStreamReady() noexcept {
