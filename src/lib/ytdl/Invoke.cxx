@@ -18,16 +18,16 @@ namespace Ytdl {
 std::unique_ptr<YtdlProcess>
 YtdlProcess::Invoke(Yajl::Handle &handle, const char *url, PlaylistMode mode)
 {
-	int pipefd[2];
-	if (pipe2(pipefd, O_CLOEXEC) < 0) {
+	FileDescriptor read, write;
+	if (!FileDescriptor::CreatePipe(read, write)) {
 		throw MakeErrno("Failed to create pipe");
 	}
 
-	AtScopeExit(&pipefd) {
-		if (pipefd[0] != -1) {
-			close(pipefd[0]);
+	AtScopeExit(&read, &write) {
+		if (read.IsDefined()) {
+			read.Close();
 		}
-		close(pipefd[1]);
+		write.Close();
 	};
 
 	// block all signals while forking child
@@ -54,7 +54,7 @@ YtdlProcess::Invoke(Yajl::Handle &handle, const char *url, PlaylistMode mode)
 			_exit(EXIT_FAILURE);
 		}
 
-		if (dup2(pipefd[1], STDOUT_FILENO) < 0) {
+		if (!write.Duplicate(FileDescriptor(STDOUT_FILENO))) {
 			_exit(EXIT_FAILURE);
 		}
 
@@ -84,16 +84,14 @@ YtdlProcess::Invoke(Yajl::Handle &handle, const char *url, PlaylistMode mode)
 		throw MakeErrno("Failed to fork()");
 	}
 
-	auto process = std::make_unique<YtdlProcess>(handle, pipefd[0], pid);
-
-	pipefd[0] = -1; // sentinel to prevent closing AtExit
+	auto process = std::make_unique<YtdlProcess>(handle, read.Steal(), pid);
 
 	return process;
 }
 
 YtdlProcess::~YtdlProcess()
 {
-	close(fd);
+	Close();
 
 	if (pid != -1) {
 		waitpid(pid, nullptr, 0);
@@ -106,20 +104,31 @@ YtdlProcess::Process()
 	uint8_t buffer[0x80];
 	int res;
 	do {
-		res = read(fd, buffer, sizeof(buffer));
+		res = fd.Read(buffer, sizeof(buffer));
 		if (res < 0) {
 			if (errno == EWOULDBLOCK) {
 				return true;
 			} else if (errno != EINTR && errno != EAGAIN) {
-				throw MakeErrno("failed to read from pipe");
+				throw MakeErrno("failed to read from youtube-dl pipe");
 			}
 		} else if (res > 0) {
 			handle.Parse(buffer, res);
 		}
 	} while (res != 0);
 
+	return false;
+}
+
+void
+YtdlProcess::Complete()
+{
+	if (!fd.Close()) {
+		throw MakeErrno("failed to close youtube-dl pipe");
+	}
+
 	handle.CompleteParse();
 
+	int res;
 	if (waitpid(pid, &res, 0) < 0) {
 		throw MakeErrno("failed to wait on youtube-dl process");
 	}
@@ -129,22 +138,33 @@ YtdlProcess::Process()
 	if (res) {
 		throw FormatRuntimeError("youtube-dl exited with code %d", res);
 	}
+}
 
-	return false;
+void
+YtdlProcess::Close()
+{
+	if (fd.IsDefined()) {
+		fd.Close();
+	}
 }
 
 bool
 YtdlMonitor::OnSocketReady([[maybe_unused]] unsigned flags) noexcept
 {
 	try {
-		// TODO: repeatedly call Process and wait for EWOULDBLOCK?
 		if (process->Process()) {
 			return true;
 		} else {
+			Steal();
+			process->Complete();
 			handler.OnComplete(this);
 			return false;
 		}
 	} catch (...) {
+		if (IsDefined()) {
+			Steal();
+		}
+		process->Close();
 		handler.OnError(this, std::current_exception());
 		return false;
 	}
@@ -166,6 +186,7 @@ BlockingInvoke(Yajl::Handle &handle, const char *url, PlaylistMode mode)
 	auto process = YtdlProcess::Invoke(handle, url, mode);
 
 	while (process->Process()) {}
+	process->Complete();
 }
 
 std::unique_ptr<InvokeContext>
@@ -187,7 +208,9 @@ InvokeContext::Invoke(const char* uri, PlaylistMode mode, EventLoop &event_loop,
 
 InvokeContext::~InvokeContext() {
 	BlockingCall(monitor->GetEventLoop(), [&] {
-		monitor->Steal();
+		if (monitor->IsDefined()) {
+			monitor->Steal();
+		}
 	});
 }
 
