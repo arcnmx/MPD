@@ -35,7 +35,7 @@ public:
 
 class YtdlProcess {
 	Yajl::Handle &handle;
-	int fd;
+	FileDescriptor fd;
 	int pid;
 
 public:
@@ -44,12 +44,14 @@ public:
 
 	~YtdlProcess();
 
-	int GetDescriptor() const noexcept {
+	FileDescriptor const& GetDescriptor() const noexcept {
 		return fd;
 	}
 
 	static std::unique_ptr<YtdlProcess> Invoke(Yajl::Handle &handle, const char *url, PlaylistMode mode);
 	bool Process();
+	void Complete();
+	void Close();
 };
 
 class YtdlMonitor : public SocketMonitor {
@@ -58,7 +60,7 @@ class YtdlMonitor : public SocketMonitor {
 
 public:
 	YtdlMonitor(YtdlHandler &_handler, std::unique_ptr<YtdlProcess> && _process, EventLoop &_loop) noexcept
-		:SocketMonitor(SocketDescriptor(_process->GetDescriptor()), _loop), handler(_handler), process(std::move(_process)) {}
+		:SocketMonitor(SocketDescriptor(_process->GetDescriptor().Get()), _loop), handler(_handler), process(std::move(_process)) {}
 
 protected:
 	bool OnSocketReady(unsigned flags) noexcept;
