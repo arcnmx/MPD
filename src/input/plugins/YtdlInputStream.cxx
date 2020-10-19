@@ -17,8 +17,12 @@ YtdlInputStream::~YtdlInputStream() noexcept {
 
 void YtdlInputStream::SyncFields() noexcept {
 	seekable = inner->IsSeekable();
-	size = inner->GetSize();
 	offset = inner->GetOffset();
+	if (inner->KnownSize()) {
+		size = inner->GetSize();
+	} else {
+		size = UNKNOWN_SIZE;
+	}
 }
 
 void YtdlInputStream::Check() {
@@ -49,6 +53,7 @@ void YtdlInputStream::Update() noexcept {
 void YtdlInputStream::Seek(std::unique_lock<Mutex> &lock, offset_type by_offset) {
 	if (inner != nullptr) {
 		inner->Seek(lock, by_offset);
+		SyncFields();
 	}
 }
 
