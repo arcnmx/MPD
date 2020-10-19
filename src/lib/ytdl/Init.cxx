@@ -8,6 +8,7 @@
 static const char* DEFAULT_WHITELIST =
 	"youtu.be "
 	"www.youtube.com "
+	"music.youtube.com "
 	"soundcloud.com "
 	"www.twitch.tv";
 
