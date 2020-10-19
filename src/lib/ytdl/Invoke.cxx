@@ -175,7 +175,7 @@ InvokeContext::Invoke(const char* uri, PlaylistMode mode, EventLoop &event_loop,
 	auto handle = parser->CreateHandle();
 	auto monitor = Ytdl::Invoke(*handle, uri, mode, event_loop, handler);
 	BlockingCall(monitor->GetEventLoop(), [&] {
-		monitor->ScheduleRead();
+		monitor->Schedule(SocketMonitor::READ | SocketMonitor::HANGUP | SocketMonitor::ERROR);
 	});
 	return std::make_unique<InvokeContext>(
 		std::move(metadata),
