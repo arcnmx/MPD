@@ -22,6 +22,7 @@ public:
 	virtual void Check();
 	virtual void Update() noexcept;
 	virtual void Seek(std::unique_lock<Mutex> &lock, offset_type by_offset);
+	virtual const char *GetURI() const noexcept;
 
 	gcc_pure
 	virtual bool IsEOF() const noexcept;
