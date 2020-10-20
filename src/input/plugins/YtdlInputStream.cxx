@@ -96,6 +96,7 @@ bool YtdlInputStream::IsAvailable() noexcept {
 gcc_nonnull_all
 size_t YtdlInputStream::Read(std::unique_lock<Mutex> &lock, void *ptr, size_t sz) {
 	if (inner != nullptr) {
+		context = nullptr;
 		size_t res = inner->Read(lock, ptr, sz);
 		SyncFields();
 		return res;
@@ -120,13 +121,11 @@ void YtdlInputStream::OnComplete([[maybe_unused]] Ytdl::YtdlMonitor* monitor) {
 		pending_exception = std::current_exception();
 		SetReady(); // Notify the handler so it doesn't stuck waiting
 	}
-	context = nullptr;
 }
 
 void YtdlInputStream::OnError([[maybe_unused]] Ytdl::YtdlMonitor* monitor, std::exception_ptr e) {
 	const std::lock_guard<Mutex> protect(mutex);
 	pending_exception = e;
-	context = nullptr;
 	SetReady();
 }
 
