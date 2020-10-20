@@ -2,11 +2,14 @@
 #define MPD_LIB_YTDL_INIT_HXX
 
 #include "input/InputStream.hxx"
+#include "util/Domain.hxx"
 #include <string>
 #include <forward_list>
 
 class EventLoop;
 class ConfigBlock;
+
+extern const class Domain ytdl_domain;
 
 namespace Ytdl {
 
