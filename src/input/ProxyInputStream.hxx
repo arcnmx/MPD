@@ -58,6 +58,7 @@ public:
 	ProxyInputStream &operator=(const ProxyInputStream &) = delete;
 
 	/* virtual methods from InputStream */
+	const char *GetURI() const noexcept;
 	void Check() override;
 	void Update() noexcept override;
 	void Seek(std::unique_lock<Mutex> &lock,

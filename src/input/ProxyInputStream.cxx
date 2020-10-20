@@ -71,6 +71,16 @@ ProxyInputStream::CopyAttributes()
 	}
 }
 
+const char*
+ProxyInputStream::GetURI() const noexcept
+{
+	if (input) {
+		return input->GetURI();
+	} else {
+		return InputStream::GetURI();
+	}
+}
+
 void
 ProxyInputStream::Check()
 {
