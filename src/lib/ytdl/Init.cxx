@@ -5,6 +5,8 @@
 #include "util/StringCompare.hxx"
 #include "util/IterableSplitString.hxx"
 
+const Domain ytdl_domain("youtube-dl");
+
 static const char* DEFAULT_WHITELIST =
 	"youtu.be "
 	"music.youtube.com "
