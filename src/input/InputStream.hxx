@@ -153,7 +153,7 @@ public:
 	 *
 	 * No lock necessary for this method.
 	 */
-	const char *GetURI() const noexcept {
+	virtual const char *GetURI() const noexcept {
 		return uri.c_str();
 	}
 
