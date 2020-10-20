@@ -15,6 +15,14 @@ YtdlInputStream::YtdlInputStream(const char *_uri, Mutex &_mutex, EventLoop &eve
 YtdlInputStream::~YtdlInputStream() noexcept {
 }
 
+const char *YtdlInputStream::GetURI() const noexcept {
+	if (inner != nullptr) {
+		return inner->GetURI();
+	} else {
+		return InputStream::GetURI();
+	}
+}
+
 void YtdlInputStream::SyncFields() noexcept {
 	seekable = inner->IsSeekable();
 	offset = inner->GetOffset();
