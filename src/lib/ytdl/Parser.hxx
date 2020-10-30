@@ -1,7 +1,7 @@
 #ifndef MPD_LIB_YTDL_PARSER_HXX
 #define MPD_LIB_YTDL_PARSER_HXX
 
-#include "event/SocketMonitor.hxx"
+#include "event/SocketEvent.hxx"
 #include "lib/yajl/Handle.hxx"
 #include "Handler.hxx"
 #include <memory>
@@ -54,16 +54,35 @@ public:
 	void Close();
 };
 
-class YtdlMonitor : public SocketMonitor {
+class YtdlMonitor {
+	SocketEvent socket_event;
 	YtdlHandler &handler;
 	std::unique_ptr<YtdlProcess> process;
 
 public:
 	YtdlMonitor(YtdlHandler &_handler, std::unique_ptr<YtdlProcess> && _process, EventLoop &_loop) noexcept
-		:SocketMonitor(SocketDescriptor(_process->GetDescriptor().Get()), _loop), handler(_handler), process(std::move(_process)) {}
+		:socket_event(_loop, BIND_THIS_METHOD(OnSocketReady), SocketDescriptor(_process->GetDescriptor().Get())),
+		 handler(_handler), process(std::move(_process)) {}
 
-protected:
-	bool OnSocketReady(unsigned flags) noexcept;
+	auto &GetEventLoop() const noexcept {
+		return socket_event.GetEventLoop();
+	}
+
+	bool Schedule(unsigned flags) noexcept {
+		return socket_event.Schedule(flags);
+	}
+
+	bool IsDefined() const noexcept {
+		return socket_event.IsDefined();
+	}
+
+	SocketDescriptor ReleaseSocket() noexcept {
+		return socket_event.ReleaseSocket();
+	}
+
+
+private:
+	void OnSocketReady(unsigned flags) noexcept;
 };
 
 void BlockingInvoke(Yajl::Handle &handle, const char *url, PlaylistMode mode);
