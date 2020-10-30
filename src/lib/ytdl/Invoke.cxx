@@ -149,25 +149,21 @@ YtdlProcess::Close()
 	}
 }
 
-bool
+void
 YtdlMonitor::OnSocketReady([[maybe_unused]] unsigned flags) noexcept
 {
 	try {
-		if (process->Process()) {
-			return true;
-		} else {
-			Steal();
+		if (!process->Process()) {
+			ReleaseSocket();
 			process->Complete();
 			handler.OnComplete(this);
-			return false;
 		}
 	} catch (...) {
 		if (IsDefined()) {
-			Steal();
+			ReleaseSocket();
 		}
 		process->Close();
 		handler.OnError(this, std::current_exception());
-		return false;
 	}
 }
 
@@ -197,7 +193,7 @@ InvokeContext::Invoke(const char* uri, PlaylistMode mode, EventLoop &event_loop,
 	auto handle = parser->CreateHandle();
 	auto monitor = Ytdl::Invoke(*handle, uri, mode, event_loop, handler);
 	BlockingCall(monitor->GetEventLoop(), [&] {
-		monitor->Schedule(SocketMonitor::READ | SocketMonitor::HANGUP | SocketMonitor::ERROR);
+		monitor->Schedule(SocketEvent::READ);
 	});
 	return std::make_unique<InvokeContext>(
 		std::move(metadata),
@@ -210,7 +206,7 @@ InvokeContext::Invoke(const char* uri, PlaylistMode mode, EventLoop &event_loop,
 InvokeContext::~InvokeContext() {
 	BlockingCall(monitor->GetEventLoop(), [&] {
 		if (monitor->IsDefined()) {
-			monitor->Steal();
+			monitor->ReleaseSocket();
 		}
 	});
 }
