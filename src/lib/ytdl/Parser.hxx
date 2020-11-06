@@ -60,7 +60,7 @@ class YtdlMonitor : public SocketMonitor {
 
 public:
 	YtdlMonitor(YtdlHandler &_handler, std::unique_ptr<YtdlProcess> && _process, EventLoop &_loop) noexcept
-		:SocketMonitor(SocketDescriptor(_process->GetDescriptor().Get()), _loop), handler(_handler), process(std::move(_process)) {}
+		:SocketMonitor(SocketDescriptor::FromFileDescriptor(_process->GetDescriptor()), _loop), handler(_handler), process(std::move(_process)) {}
 
 protected:
 	bool OnSocketReady(unsigned flags) noexcept;
