@@ -2,6 +2,7 @@
 #include "Parser.hxx"
 #include "Invoke.hxx"
 #include "system/Error.hxx"
+#include "util/RuntimeError.hxx"
 #include "util/ScopeExit.hxx"
 #include "event/Loop.hxx"
 #include "event/Call.hxx"
