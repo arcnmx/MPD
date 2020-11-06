@@ -61,7 +61,7 @@ class YtdlMonitor {
 
 public:
 	YtdlMonitor(YtdlHandler &_handler, std::unique_ptr<YtdlProcess> && _process, EventLoop &_loop) noexcept
-		:socket_event(_loop, BIND_THIS_METHOD(OnSocketReady), SocketDescriptor(_process->GetDescriptor().Get())),
+		:socket_event(_loop, BIND_THIS_METHOD(OnSocketReady), SocketDescriptor::FromFileDescriptor(_process->GetDescriptor())),
 		 handler(_handler), process(std::move(_process)) {}
 
 	auto &GetEventLoop() const noexcept {
