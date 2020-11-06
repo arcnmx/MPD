@@ -44,17 +44,8 @@ SocketEvent::Close() noexcept
 		return;
 
 	if (std::exchange(scheduled_flags, 0) != 0)
-		loop.AbandonFD(*this);
+		loop.RemoveFD(fd.Get(), *this);
 	fd.Close();
-}
-
-void
-SocketEvent::Abandon() noexcept
-{
-	if (std::exchange(scheduled_flags, 0) != 0)
-		loop.AbandonFD(*this);
-
-	fd = SocketDescriptor::Undefined();
 }
 
 bool
