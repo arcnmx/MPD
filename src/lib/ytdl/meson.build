@@ -6,6 +6,10 @@ else
   if not enable_ytdl and ytdl_feature.enabled()
     error('youtube-dl requires CURL and libyajl')
   endif
+
+  if is_windows or is_android
+    error('youtube-dl not supported on this platform')
+  endif
 endif
 conf.set('ENABLE_YTDL', enable_ytdl)
 if not enable_ytdl
