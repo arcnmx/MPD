@@ -1,5 +1,6 @@
 ytdl_feature = get_option('youtube-dl')
-if ytdl_feature.disabled()
+
+if ytdl_feature.disabled() or ytdl_feature.auto() and (is_windows or is_android)
   enable_ytdl = false
 else
   enable_ytdl = curl_dep.found() and yajl_dep.found()
@@ -11,8 +12,11 @@ else
     error('youtube-dl not supported on this platform')
   endif
 endif
+
 conf.set('ENABLE_YTDL', enable_ytdl)
+
 if not enable_ytdl
+  ytdl_dep = dependency('', required: false)
   subdir_done()
 endif
 
