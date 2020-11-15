@@ -1,44 +1,30 @@
 #ifndef MPD_INPUT_YTDL_STREAM_HXX
 #define MPD_INPUT_YTDL_STREAM_HXX
 
-#include "../InputStream.hxx"
-#include "../Handler.hxx"
+#include "../ProxyInputStream.hxx"
 #include "lib/ytdl/Invoke.hxx"
 
 class Tag;
 
-class YtdlInputStream : public InputStream, public InputStreamHandler, public Ytdl::YtdlHandler {
+class YtdlInputStream : public ProxyInputStream, public Ytdl::YtdlHandler {
 	std::unique_ptr<Ytdl::InvokeContext> context;
 	std::unique_ptr<Tag> tag;
-	InputStreamPtr inner;
 	std::exception_ptr pending_exception;
-
-	void SyncFields() noexcept;
 
 public:
 	YtdlInputStream(const char *_uri, Mutex &_mutex, EventLoop &event_loop) noexcept;
 
-	virtual ~YtdlInputStream() noexcept;
-	virtual void Check();
-	virtual void Update() noexcept;
-	virtual void Seek(std::unique_lock<Mutex> &lock, offset_type by_offset);
-	virtual const char *GetURI() const noexcept;
+	~YtdlInputStream() noexcept;
+	void Check() override;
 
-	gcc_pure
-	virtual bool IsEOF() const noexcept;
-	virtual std::unique_ptr<Tag> ReadTag() noexcept;
-
-	gcc_pure
-	virtual bool IsAvailable() noexcept;
+	std::unique_ptr<Tag> ReadTag() noexcept override;
 
 	gcc_nonnull_all
-	virtual size_t Read(std::unique_lock<Mutex> &lock, void *ptr, size_t size);
+	size_t Read(std::unique_lock<Mutex> &lock, void *ptr, size_t size);
 
-	void OnComplete(Ytdl::YtdlMonitor* monitor);
-	void OnError(Ytdl::YtdlMonitor* monitor, std::exception_ptr e);
 
-	virtual void OnInputStreamReady() noexcept;
-	virtual void OnInputStreamAvailable() noexcept;
+	void OnComplete(Ytdl::YtdlMonitor* monitor) override;
+	void OnError(Ytdl::YtdlMonitor* monitor, std::exception_ptr e) override;
 };
 
 #endif

@@ -3,7 +3,7 @@
 #include "tag/Tag.hxx"
 
 YtdlInputStream::YtdlInputStream(const char *_uri, Mutex &_mutex, EventLoop &event_loop) noexcept
-	:InputStream(_uri, _mutex)
+	:ProxyInputStream(_uri, _mutex)
 {
 	try {
 		context = Ytdl::InvokeContext::Invoke(_uri, Ytdl::PlaylistMode::SINGLE, event_loop, *this);
@@ -15,24 +15,6 @@ YtdlInputStream::YtdlInputStream(const char *_uri, Mutex &_mutex, EventLoop &eve
 YtdlInputStream::~YtdlInputStream() noexcept {
 }
 
-const char *YtdlInputStream::GetURI() const noexcept {
-	if (inner != nullptr) {
-		return inner->GetURI();
-	} else {
-		return InputStream::GetURI();
-	}
-}
-
-void YtdlInputStream::SyncFields() noexcept {
-	seekable = inner->IsSeekable();
-	offset = inner->GetOffset();
-	if (inner->KnownSize()) {
-		size = inner->GetSize();
-	} else {
-		size = UNKNOWN_SIZE;
-	}
-}
-
 void YtdlInputStream::Check() {
 	if (pending_exception != nullptr) {
 		std::exception_ptr ex = pending_exception;
@@ -40,69 +22,25 @@ void YtdlInputStream::Check() {
 		std::rethrow_exception(ex);
 	}
 
-	if (inner != nullptr) {
-		inner->Check();
-	}
-}
-
-void YtdlInputStream::Update() noexcept {
-	if (inner != nullptr) {
-		inner->Update();
-		if (!ready && inner->IsReady()) {
-			SetMimeType(inner->GetMimeType());
-			SetReady();
-		}
-		if (inner->IsReady()) {
-			SyncFields();
-		}
-	}
-}
-
-void YtdlInputStream::Seek(std::unique_lock<Mutex> &lock, offset_type by_offset) {
-	if (inner != nullptr) {
-		inner->Seek(lock, by_offset);
-		SyncFields();
-	}
-}
-
-gcc_pure
-bool YtdlInputStream::IsEOF() const noexcept {
-	if (inner != nullptr) {
-		return inner->IsEOF();
-	} else {
-		return false;
+	if (input != nullptr) {
+		input->Check();
 	}
 }
 
 std::unique_ptr<Tag> YtdlInputStream::ReadTag() noexcept {
 	if (tag != nullptr) {
 		return std::move(tag);
-	} else if (inner != nullptr) {
-		return inner->ReadTag();
+	} else if (input != nullptr) {
+		return input->ReadTag();
 	} else {
 		return nullptr;
 	}
 }
 
-gcc_pure
-bool YtdlInputStream::IsAvailable() noexcept {
-	if (inner != nullptr) {
-		return inner->IsAvailable();
-	} else {
-		return pending_exception != nullptr;
-	}
-}
-
-gcc_nonnull_all
 size_t YtdlInputStream::Read(std::unique_lock<Mutex> &lock, void *ptr, size_t sz) {
-	if (inner != nullptr) {
+	if(input)
 		context = nullptr;
-		size_t res = inner->Read(lock, ptr, sz);
-		SyncFields();
-		return res;
-	} else {
-		throw std::runtime_error("youtube-dl stream not ready for reading");
-	}
+	return ProxyInputStream::Read(lock, ptr, sz);
 }
 
 void YtdlInputStream::OnComplete([[maybe_unused]] Ytdl::YtdlMonitor* monitor) {
@@ -114,9 +52,8 @@ void YtdlInputStream::OnComplete([[maybe_unused]] Ytdl::YtdlMonitor* monitor) {
 		}
 
 		tag = context->GetMetadata().GetTagBuilder().CommitNew();
-		inner = OpenCurlInputStream(context->GetMetadata().GetURL().c_str(),
-			context->GetMetadata().GetHeaders(), mutex);
-		inner->SetHandler(this);
+		SetInput(OpenCurlInputStream(context->GetMetadata().GetURL().c_str(),
+			context->GetMetadata().GetHeaders(), mutex));
 	} catch (...) {
 		pending_exception = std::current_exception();
 		SetReady(); // Notify the handler so it doesn't stuck waiting
@@ -127,12 +64,4 @@ void YtdlInputStream::OnError([[maybe_unused]] Ytdl::YtdlMonitor* monitor, std::
 	const std::lock_guard<Mutex> protect(mutex);
 	pending_exception = e;
 	SetReady();
-}
-
-void YtdlInputStream::OnInputStreamReady() noexcept {
-	InvokeOnReady();
-}
-
-void YtdlInputStream::OnInputStreamAvailable() noexcept {
-	InvokeOnAvailable();
 }
