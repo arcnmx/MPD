@@ -6,6 +6,8 @@
 #include "util/ScopeExit.hxx"
 #include "event/Loop.hxx"
 #include "event/Call.hxx"
+#include "Instance.hxx"
+#include "Main.hxx"
 
 #include <cinttypes>
 
@@ -39,7 +41,7 @@ YtdlProcess::Invoke(Yajl::Handle &handle, const char *url, PlaylistMode mode)
 		throw MakeErrno(res, "Failed to block signals");
 	}
 
-	int pid = fork();
+	int pid = vfork();
 
 	if (!pid) {
 		// restore all signal handlers to default
@@ -85,9 +87,7 @@ YtdlProcess::Invoke(Yajl::Handle &handle, const char *url, PlaylistMode mode)
 		throw MakeErrno("Failed to fork()");
 	}
 
-	auto process = std::make_unique<YtdlProcess>(handle, read.Steal(), pid);
-
-	return process;
+	return std::make_unique<YtdlProcess>(handle, read.Steal(), pid);
 }
 
 YtdlProcess::~YtdlProcess()
@@ -180,7 +180,10 @@ Invoke(Yajl::Handle &handle, const char *url, PlaylistMode mode, EventLoop &loop
 void
 BlockingInvoke(Yajl::Handle &handle, const char *url, PlaylistMode mode)
 {
-	auto process = YtdlProcess::Invoke(handle, url, mode);
+	std::unique_ptr<YtdlProcess> process;
+	BlockingCall(global_instance->event_loop, [&] {
+		process = YtdlProcess::Invoke(handle, url, mode);
+	});
 
 	while (process->Process()) {}
 	process->Complete();
@@ -191,8 +194,11 @@ InvokeContext::Invoke(const char* uri, PlaylistMode mode, EventLoop &event_loop,
 	auto metadata = std::make_unique<TagHandler>();
 	auto parser = std::make_unique<Parser>(*metadata);
 	auto handle = parser->CreateHandle();
-	auto monitor = Ytdl::Invoke(*handle, uri, mode, event_loop, handler);
-	BlockingCall(monitor->GetEventLoop(), [&] {
+	std::unique_ptr<YtdlMonitor> monitor;
+	BlockingCall(event_loop, [&] {
+		BlockingCall(global_instance->event_loop, [&] {
+			monitor = Ytdl::Invoke(*handle, uri, mode, event_loop, handler);
+		});
 		monitor->Schedule(SocketEvent::READ);
 	});
 	return std::make_unique<InvokeContext>(
