@@ -87,11 +87,11 @@ protected:
 	void CopyAttributes();
 
 	/* virtual methods from class InputStreamHandler */
-	void OnInputStreamReady() noexcept override {
+	virtual void OnInputStreamReady() noexcept override {
 		InvokeOnReady();
 	}
 
-	void OnInputStreamAvailable() noexcept override {
+	virtual void OnInputStreamAvailable() noexcept override {
 		InvokeOnAvailable();
 	}
 };

@@ -2,17 +2,21 @@
 #include "CurlInputPlugin.hxx"
 #include "tag/Tag.hxx"
 
-YtdlInputStream::YtdlInputStream(const char *_uri, Mutex &_mutex, EventLoop &event_loop) noexcept
-	:ProxyInputStream(_uri, _mutex)
+YtdlInputStream::YtdlInputStream(const char *_uri, Mutex &_mutex, EventLoop &_event_loop) noexcept
+	:ProxyInputStream(_uri, _mutex), event_loop(_event_loop)
 {
-	try {
-		context = Ytdl::InvokeContext::Invoke(_uri, Ytdl::PlaylistMode::SINGLE, event_loop, *this);
-	} catch (...) {
-		pending_exception = std::current_exception();
-	}
+	InvokeYtdl();
 }
 
 YtdlInputStream::~YtdlInputStream() noexcept {
+}
+
+void YtdlInputStream::InvokeYtdl() {
+	try {
+		context = Ytdl::InvokeContext::Invoke(InputStream::GetURI(), Ytdl::PlaylistMode::SINGLE, event_loop, *this);
+	} catch (...) {
+		pending_exception = std::current_exception();
+	}
 }
 
 const char *YtdlInputStream::GetURI() const noexcept {
@@ -61,6 +65,7 @@ void YtdlInputStream::OnComplete([[maybe_unused]] Ytdl::YtdlMonitor* monitor) {
 		}
 
 		tag = context->GetMetadata().GetTagBuilder().CommitNew();
+
 		SetInput(OpenCurlInputStream(context->GetMetadata().GetURL().c_str(),
 			context->GetMetadata().GetHeaders(), mutex));
 	} catch (...) {
@@ -73,4 +78,26 @@ void YtdlInputStream::OnError([[maybe_unused]] Ytdl::YtdlMonitor* monitor, std::
 	const std::lock_guard<Mutex> protect(mutex);
 	pending_exception = e;
 	SetReady();
+}
+
+void YtdlInputStream::OnInputStreamReady() noexcept {
+	// This can be triggered when CurlInputStream fails. When that happens, try
+	// to invoke youtube-dl again and get a new url.
+	if (input != nullptr) {
+		try {
+			input->Check();
+			retry_counter = 0;
+		} catch (...) {
+			if (retry_counter < MAX_RETRY) {
+				input = nullptr;
+				InvokeYtdl();
+				retry_counter++;
+				return;
+			} else {
+				pending_exception = std::current_exception();
+			}
+		}
+	}
+
+	ProxyInputStream::OnInputStreamReady();
 }
