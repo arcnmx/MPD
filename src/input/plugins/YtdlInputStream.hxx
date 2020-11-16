@@ -22,14 +22,14 @@ class YtdlInputStream : public ProxyInputStream, public Ytdl::YtdlHandler {
 public:
 	YtdlInputStream(const char *_uri, Mutex &_mutex, EventLoop &event_loop) noexcept;
 
-	virtual ~YtdlInputStream() noexcept;
-	virtual void Check();
-	virtual const char *GetURI() const noexcept;
+	~YtdlInputStream() noexcept;
+	void Check() override;
+	const char *GetURI() const noexcept override;
 
-	virtual std::unique_ptr<Tag> ReadTag() noexcept;
+	std::unique_ptr<Tag> ReadTag() noexcept override;
 
 	gcc_nonnull_all
-	virtual size_t Read(std::unique_lock<Mutex> &lock, void *ptr, size_t size);
+	size_t Read(std::unique_lock<Mutex> &lock, void *ptr, size_t size) override;
 
 	void OnComplete(Ytdl::YtdlMonitor* monitor);
 	void OnError(Ytdl::YtdlMonitor* monitor, std::exception_ptr e);
