@@ -36,7 +36,7 @@ class InputStream {
 public:
 	typedef ::offset_type offset_type;
 
-private:
+protected:
 	/**
 	 * The absolute URI which was used to open this stream.
 	 */

@@ -5,11 +5,20 @@
 #include "lib/ytdl/Invoke.hxx"
 
 class Tag;
+class InputStreamHandler;
 
 class YtdlInputStream : public ProxyInputStream, public Ytdl::YtdlHandler {
+	static const int MAX_RETRY = 1;
+
 	std::unique_ptr<Ytdl::InvokeContext> context;
 	std::unique_ptr<Tag> tag;
 	std::exception_ptr pending_exception;
+	InputStreamHandler *handler = nullptr;
+	EventLoop &event_loop;
+
+	int retry_counter = 0;
+
+	void InvokeYtdl();
 
 public:
 	YtdlInputStream(const char *_uri, Mutex &_mutex, EventLoop &event_loop) noexcept;
@@ -22,9 +31,10 @@ public:
 	gcc_nonnull_all
 	size_t Read(std::unique_lock<Mutex> &lock, void *ptr, size_t size);
 
-
 	void OnComplete(Ytdl::YtdlMonitor* monitor) override;
 	void OnError(Ytdl::YtdlMonitor* monitor, std::exception_ptr e) override;
+
+	void OnInputStreamReady() noexcept override;
 };
 
 #endif
