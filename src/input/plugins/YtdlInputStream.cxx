@@ -16,8 +16,8 @@ YtdlInputStream::~YtdlInputStream() noexcept {
 }
 
 const char *YtdlInputStream::GetURI() const noexcept {
-	if (inner != nullptr) {
-		return inner->GetURI();
+	if (input != nullptr) {
+		return input->GetURI();
 	} else {
 		return InputStream::GetURI();
 	}
