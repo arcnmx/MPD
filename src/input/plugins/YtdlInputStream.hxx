@@ -3,6 +3,7 @@
 
 #include "../ProxyInputStream.hxx"
 #include "lib/ytdl/Invoke.hxx"
+#include "lib/ytdl/Init.hxx"
 
 class Tag;
 class InputStreamHandler;
@@ -13,14 +14,14 @@ class YtdlInputStream : public ProxyInputStream, public Ytdl::YtdlHandler {
 	std::unique_ptr<Ytdl::InvokeContext> context;
 	std::unique_ptr<Tag> tag;
 	std::exception_ptr pending_exception;
-	EventLoop &event_loop;
+	const Ytdl::YtdlInit &init;
 
 	int retry_counter = 0;
 
 	void InvokeYtdl();
 
 public:
-	YtdlInputStream(const char *_uri, Mutex &_mutex, EventLoop &event_loop) noexcept;
+	YtdlInputStream(const char *_uri, Mutex &_mutex, const Ytdl::YtdlInit &_init) noexcept;
 
 	~YtdlInputStream() noexcept;
 	void Check() override;
