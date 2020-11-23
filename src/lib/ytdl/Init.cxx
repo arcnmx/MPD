@@ -7,6 +7,7 @@
 
 const Domain ytdl_domain("youtube-dl");
 
+static const char* DEFAULT_COMMAND = "youtube-dl";
 static const char* DEFAULT_WHITELIST =
 	"youtu.be "
 	"music.youtube.com "
@@ -16,7 +17,7 @@ namespace Ytdl {
 
 static std::weak_ptr<YtdlInit> singleton;
 
-YtdlInit::YtdlInit(): event_loop(nullptr) { }
+YtdlInit::YtdlInit(): event_loop(nullptr), command(DEFAULT_COMMAND) { }
 
 std::shared_ptr<YtdlInit>
 YtdlInit::Init() {
@@ -72,6 +73,9 @@ YtdlInit::InitInput(const ConfigBlock &block, EventLoop &_event_loop)
 			domain_whitelist.emplace_front(domain.ToString());
 		}
 	}
+
+	command = block.GetBlockValue("command", DEFAULT_COMMAND);
+	config_file = block.GetBlockValue("config_file", "");
 
 	event_loop = &_event_loop;
 }

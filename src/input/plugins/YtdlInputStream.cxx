@@ -2,8 +2,8 @@
 #include "CurlInputPlugin.hxx"
 #include "tag/Tag.hxx"
 
-YtdlInputStream::YtdlInputStream(const char *_uri, Mutex &_mutex, EventLoop &_event_loop) noexcept
-	:ProxyInputStream(_uri, _mutex), event_loop(_event_loop)
+YtdlInputStream::YtdlInputStream(const char *_uri, Mutex &_mutex, const Ytdl::YtdlInit &_init) noexcept
+	:ProxyInputStream(_uri, _mutex), init(_init)
 {
 	InvokeYtdl();
 }
@@ -13,7 +13,7 @@ YtdlInputStream::~YtdlInputStream() noexcept {
 
 void YtdlInputStream::InvokeYtdl() {
 	try {
-		context = Ytdl::InvokeContext::Invoke(InputStream::GetURI(), Ytdl::PlaylistMode::SINGLE, event_loop, *this);
+		context = Ytdl::InvokeContext::Invoke(init, InputStream::GetURI(), Ytdl::PlaylistMode::SINGLE, *this);
 	} catch (...) {
 		pending_exception = std::current_exception();
 	}
