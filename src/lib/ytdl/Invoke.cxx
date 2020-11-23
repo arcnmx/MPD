@@ -1,6 +1,7 @@
 #include "config.h"
 #include "Parser.hxx"
 #include "Invoke.hxx"
+#include "Init.hxx"
 #include "system/Error.hxx"
 #include "util/RuntimeError.hxx"
 #include "util/ScopeExit.hxx"
@@ -17,7 +18,7 @@
 namespace Ytdl {
 
 std::unique_ptr<YtdlProcess>
-YtdlProcess::Invoke(Yajl::Handle &handle, const char *url, PlaylistMode mode)
+YtdlProcess::Invoke(const YtdlInit &init, Yajl::Handle &handle, const char *url, PlaylistMode mode)
 {
 	FileDescriptor read, write;
 	if (!FileDescriptor::CreatePipe(read, write)) {
@@ -69,9 +70,19 @@ YtdlProcess::Invoke(Yajl::Handle &handle, const char *url, PlaylistMode mode)
 				break;
 		}
 
-		if (execlp("youtube-dl", "youtube-dl",
-			"-Jf", "bestaudio/best", "--flat-playlist", playlist_flag, url, nullptr) < 0)
-		{
+		auto &config_file = init.GetConfigFile();
+		const char *config_flag = config_file.empty() ? nullptr : "--config-location";
+
+		const char *argv[] = {
+			"youtube-dl",
+			"-Jf", "bestaudio/best",
+			"--flat-playlist", playlist_flag,
+			url,
+			config_flag, config_file.c_str(),
+			nullptr,
+		};
+
+		if (execvp(init.GetCommand().c_str(), const_cast<char * const *>(argv)) < 0) {
 			_exit(EXIT_FAILURE);
 		}
 	}
@@ -172,30 +183,30 @@ YtdlMonitor::OnSocketReady([[maybe_unused]] unsigned flags) noexcept
 }
 
 std::unique_ptr<YtdlMonitor>
-Invoke(Yajl::Handle &handle, const char *url, PlaylistMode mode, EventLoop &loop, YtdlHandler &handler)
+Invoke(const YtdlInit &init, Yajl::Handle &handle, const char *url, PlaylistMode mode, YtdlHandler &handler)
 {
-	auto process = YtdlProcess::Invoke(handle, url, mode);
+	auto process = YtdlProcess::Invoke(init, handle, url, mode);
 
-	std::unique_ptr<YtdlMonitor> monitor = std::make_unique<YtdlMonitor>(handler, std::move(process), loop);
+	std::unique_ptr<YtdlMonitor> monitor = std::make_unique<YtdlMonitor>(handler, std::move(process), init.GetEventLoop());
 
 	return monitor;
 }
 
 void
-BlockingInvoke(Yajl::Handle &handle, const char *url, PlaylistMode mode)
+BlockingInvoke(const YtdlInit &init, Yajl::Handle &handle, const char *url, PlaylistMode mode)
 {
-	auto process = YtdlProcess::Invoke(handle, url, mode);
+	auto process = YtdlProcess::Invoke(init, handle, url, mode);
 
 	while (process->Process()) {}
 	process->Complete();
 }
 
 std::unique_ptr<InvokeContext>
-InvokeContext::Invoke(const char* uri, PlaylistMode mode, EventLoop &event_loop, YtdlHandler &handler) {
+InvokeContext::Invoke(const YtdlInit &init, const char* uri, PlaylistMode mode, YtdlHandler &handler) {
 	auto metadata = std::make_unique<TagHandler>();
 	auto parser = std::make_unique<Parser>(*metadata);
 	auto handle = parser->CreateHandle();
-	auto monitor = Ytdl::Invoke(*handle, uri, mode, event_loop, handler);
+	auto monitor = Ytdl::Invoke(init, *handle, uri, mode, handler);
 	BlockingCall(monitor->GetEventLoop(), [&] {
 		monitor->Schedule(SocketMonitor::READ | SocketMonitor::HANGUP | SocketMonitor::ERROR);
 	});
