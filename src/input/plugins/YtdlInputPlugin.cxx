@@ -42,7 +42,7 @@ input_ytdl_open(const char *uri, Mutex &mutex)
 {
 	uri = ytdl_init->UriSupported(uri);
 	if (uri) {
-		return std::make_unique<YtdlInputStream>(uri, mutex, ytdl_init->GetEventLoop());
+		return std::make_unique<YtdlInputStream>(uri, mutex, *ytdl_init);
 	}
 
 	return nullptr;
@@ -60,7 +60,7 @@ input_ytdl_scan_tags(const char* uri, RemoteTagHandler &handler)
 {
 	uri = ytdl_init->UriSupported(uri);
 	if (uri) {
-		return std::make_unique<YtdlTagScanner>(ytdl_init->GetEventLoop(), uri, handler);
+		return std::make_unique<YtdlTagScanner>(*ytdl_init, uri, handler);
 	}
 
 	return nullptr;
