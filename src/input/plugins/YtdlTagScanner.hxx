@@ -7,13 +7,13 @@
 #include <string>
 
 class YtdlTagScanner: public RemoteTagScanner, public Ytdl::YtdlHandler {
-	EventLoop &event_loop;
+	const Ytdl::YtdlInit &init;
 	std::string uri;
 	RemoteTagHandler &handler;
 	std::unique_ptr<Ytdl::InvokeContext> context;
 
 public:
-	YtdlTagScanner(EventLoop &event_loop, const std::string &uri, RemoteTagHandler &handler);
+	YtdlTagScanner(const Ytdl::YtdlInit &init, const std::string &uri, RemoteTagHandler &handler);
 
 	~YtdlTagScanner() override;
 

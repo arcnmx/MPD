@@ -11,6 +11,7 @@ namespace Ytdl {
 class MetadataHandler;
 class ParserContext;
 class YtdlMonitor;
+class YtdlInit;
 
 enum class PlaylistMode {
 	SINGLE,
@@ -48,7 +49,7 @@ public:
 		return fd;
 	}
 
-	static std::unique_ptr<YtdlProcess> Invoke(Yajl::Handle &handle, const char *url, PlaylistMode mode);
+	static std::unique_ptr<YtdlProcess> Invoke(const YtdlInit &init, Yajl::Handle &handle, const char *url, PlaylistMode mode);
 	bool Process();
 	void Complete();
 	void Close();
@@ -85,10 +86,10 @@ private:
 	void OnSocketReady(unsigned flags) noexcept;
 };
 
-void BlockingInvoke(Yajl::Handle &handle, const char *url, PlaylistMode mode);
+void BlockingInvoke(const YtdlInit &init, Yajl::Handle &handle, const char *url, PlaylistMode mode);
 
 std::unique_ptr<YtdlMonitor>
-Invoke(Yajl::Handle &handle, const char *url, PlaylistMode mode, EventLoop &loop, YtdlHandler &handler);
+Invoke(const YtdlInit &init, Yajl::Handle &handle, const char *url, PlaylistMode mode, YtdlHandler &handler);
 
 } // namespace Ytdl
 
