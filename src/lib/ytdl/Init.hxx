@@ -17,6 +17,7 @@ class YtdlInit {
 	EventLoop* event_loop;
 	std::forward_list<std::string> domain_whitelist;
 	std::string command;
+	std::string format;
 	std::string config_file;
 
 public:
@@ -32,6 +33,7 @@ public:
 
 	EventLoop &GetEventLoop() const { return *event_loop; }
 	const std::string &GetCommand() const { return command; }
+	const std::string &GetFormat() const { return format; }
 	const std::string &GetConfigFile() const { return config_file; }
 };
 
