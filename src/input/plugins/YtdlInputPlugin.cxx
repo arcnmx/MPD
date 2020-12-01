@@ -15,20 +15,20 @@
 #include "tag/Tag.hxx"
 #include <vector>
 
-static Ytdl::YtdlInit *ytdl_init;
+static std::shared_ptr<Ytdl::YtdlInit> ytdl_init;
 
 static void
 input_ytdl_init(EventLoop &event_loop, const ConfigBlock &block)
 {
-	ytdl_init = new Ytdl::YtdlInit(event_loop);
+	ytdl_init = Ytdl::YtdlInit::Init();
 
-	ytdl_init->Init(block);
+	ytdl_init->InitInput(block, event_loop);
 }
 
 static void
 input_ytdl_finish() noexcept
 {
-	delete ytdl_init;
+	ytdl_init.reset();
 }
 
 static bool

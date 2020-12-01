@@ -18,15 +18,17 @@ class YtdlInit {
 	std::forward_list<std::string> domain_whitelist;
 
 public:
-	YtdlInit(EventLoop &_event_loop);
 	YtdlInit();
+
+	static std::shared_ptr<YtdlInit> Init();
 
 	const char *UriSupported(const char *uri) const;
 	bool WhitelistMatch(const char *uri) const;
 
-	void Init(const ConfigBlock &block);
+	void InitPlaylist(const ConfigBlock &block);
+	void InitInput(const ConfigBlock &block, EventLoop &_event_loop);
 
-	EventLoop &GetEventLoop() { return *event_loop; }
+	EventLoop &GetEventLoop() const { return *event_loop; }
 };
 
 } // namespace Ytdl
