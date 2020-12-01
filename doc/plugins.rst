@@ -350,6 +350,9 @@ This plugin can play links from YouTube directly. To play songs from other `supp
        ``youtu.be music.youtube.com www.youtube.com``.
    * - **command**
      - Path or command name of the youtube-dl executable. Default is ``youtube-dl``.
+   * - **format**
+     - Audio format selection code. See youtube-dl documentation for more details.
+       Default is ``bestaudio/best``.
    * - **config_file**
      - File or folder path to youtube-dl configuration file. See youtube-dl documentation
        for more details.
@@ -1309,7 +1312,7 @@ youtube-dl
 ----------
 
 This plugin can play links from YouTube directly. To play songs from other `supported sites <https://ytdl-org.github.io/youtube-dl/supportedsites.html>`_, prepend ``ytdl://`` in front of the URL.
-The playlist plugin uses configurations from :ref:`input_ytdl` input plugin.
+The playlist plugin shares configuration with the :ref:`input_ytdl` input plugin.
 
 .. code-block:: none
 
