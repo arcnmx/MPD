@@ -138,8 +138,6 @@ YtdlProcess::Complete()
 		throw MakeErrno("failed to close youtube-dl pipe");
 	}
 
-	handle.CompleteParse();
-
 	int res;
 	if (waitpid(pid, &res, 0) < 0) {
 		throw MakeErrno("failed to wait on youtube-dl process");
@@ -150,6 +148,8 @@ YtdlProcess::Complete()
 	if (res) {
 		throw FormatRuntimeError("youtube-dl exited with code %d", res);
 	}
+
+	handle.CompleteParse();
 }
 
 void
