@@ -8,14 +8,14 @@
 #include "tag/Builder.hxx"
 #include "tag/Tag.hxx"
 
-static Ytdl::YtdlInit *ytdl_init;
+static std::shared_ptr<Ytdl::YtdlInit> ytdl_init;
 
 static bool
 playlist_ytdl_init(const ConfigBlock &block)
 {
-	ytdl_init = new Ytdl::YtdlInit();
+	ytdl_init = Ytdl::YtdlInit::Init();
 
-	ytdl_init->Init(block);
+	ytdl_init->InitPlaylist(block);
 
 	return true;
 }
@@ -23,7 +23,7 @@ playlist_ytdl_init(const ConfigBlock &block)
 static void
 playlist_ytdl_finish() noexcept
 {
-	delete ytdl_init;
+	ytdl_init.reset();
 }
 
 static const char *const playlist_ytdl_schemes[] = {
