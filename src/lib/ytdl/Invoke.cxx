@@ -75,7 +75,7 @@ YtdlProcess::Invoke(const YtdlInit &init, Yajl::Handle &handle, const char *url,
 
 		const char *argv[] = {
 			"youtube-dl",
-			"-Jf", "bestaudio/best",
+			"-Jf", init.GetFormat().c_str(),
 			"--flat-playlist", playlist_flag,
 			url,
 			config_flag, config_file.c_str(),
