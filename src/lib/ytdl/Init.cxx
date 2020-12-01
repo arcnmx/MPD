@@ -14,9 +14,20 @@ static const char* DEFAULT_WHITELIST =
 
 namespace Ytdl {
 
-YtdlInit::YtdlInit(EventLoop &_event_loop): event_loop(&_event_loop) { }
+static std::weak_ptr<YtdlInit> singleton;
 
 YtdlInit::YtdlInit(): event_loop(nullptr) { }
+
+std::shared_ptr<YtdlInit>
+YtdlInit::Init() {
+	auto ptr = singleton.lock();
+	if (!ptr) {
+		ptr = std::make_shared<YtdlInit>();
+		singleton = ptr;
+	}
+
+	return ptr;
+}
 
 const char *
 YtdlInit::UriSupported(const char *uri) const
@@ -52,7 +63,7 @@ YtdlInit::WhitelistMatch(const char *uri) const
 }
 
 void
-YtdlInit::Init(const ConfigBlock &block)
+YtdlInit::InitInput(const ConfigBlock &block, EventLoop &_event_loop)
 {
 	const char* domains = block.GetBlockValue("domain_whitelist", DEFAULT_WHITELIST);
 
@@ -61,6 +72,14 @@ YtdlInit::Init(const ConfigBlock &block)
 			domain_whitelist.emplace_front(domain.ToString());
 		}
 	}
+
+	event_loop = &_event_loop;
+}
+
+void
+YtdlInit::InitPlaylist([[maybe_unused]] const ConfigBlock &block)
+{
+	// no playlist-specific config settings yet
 }
 
 } // namespace Ytdl
