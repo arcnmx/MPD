@@ -50,9 +50,6 @@ std::unique_ptr<Tag> YtdlInputStream::ReadTag() noexcept {
 }
 
 size_t YtdlInputStream::Read(std::unique_lock<Mutex> &lock, void *ptr, size_t sz) {
-	if (input != nullptr) {
-		context = nullptr;
-	}
 	return ProxyInputStream::Read(lock, ptr, sz);
 }
 
@@ -72,11 +69,13 @@ void YtdlInputStream::OnComplete([[maybe_unused]] Ytdl::YtdlMonitor* monitor) {
 		pending_exception = std::current_exception();
 		SetReady(); // Notify the handler so it doesn't stuck waiting
 	}
+	context = nullptr;
 }
 
 void YtdlInputStream::OnError([[maybe_unused]] Ytdl::YtdlMonitor* monitor, std::exception_ptr e) {
 	const std::lock_guard<Mutex> protect(mutex);
 	pending_exception = e;
+	context = nullptr;
 	SetReady();
 }
 
