@@ -16,7 +16,7 @@ namespace Ytdl {
 class YtdlInit {
 	EventLoop* event_loop;
 	std::forward_list<std::string> domain_whitelist;
-	std::string command;
+	std::string executable;
 	std::string format;
 	std::string config_file;
 
@@ -32,7 +32,7 @@ public:
 	void InitInput(const ConfigBlock &block, EventLoop &_event_loop);
 
 	EventLoop &GetEventLoop() const { return *event_loop; }
-	const std::string &GetCommand() const { return command; }
+	const std::string &GetExecutable() const { return executable; }
 	const std::string &GetFormat() const { return format; }
 	const std::string &GetConfigFile() const { return config_file; }
 };

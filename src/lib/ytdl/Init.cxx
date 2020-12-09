@@ -7,7 +7,7 @@
 
 const Domain ytdl_domain("youtube-dl");
 
-static const char* DEFAULT_COMMAND = "youtube-dl";
+static const char* DEFAULT_EXECUTABLE = "youtube-dl";
 static const char* DEFAULT_FORMAT = "bestaudio/best";
 static const char* DEFAULT_WHITELIST =
 	"youtu.be "
@@ -18,7 +18,7 @@ namespace Ytdl {
 
 static std::weak_ptr<YtdlInit> singleton;
 
-YtdlInit::YtdlInit(): event_loop(nullptr), command(DEFAULT_COMMAND), format(DEFAULT_FORMAT) { }
+YtdlInit::YtdlInit(): event_loop(nullptr), executable(DEFAULT_EXECUTABLE), format(DEFAULT_FORMAT) { }
 
 std::shared_ptr<YtdlInit>
 YtdlInit::Init() {
@@ -75,7 +75,7 @@ YtdlInit::InitInput(const ConfigBlock &block, EventLoop &_event_loop)
 		}
 	}
 
-	command = block.GetBlockValue("command", DEFAULT_COMMAND);
+	executable = block.GetBlockValue("executable", DEFAULT_EXECUTABLE);
 	format = block.GetBlockValue("format", DEFAULT_FORMAT);
 	config_file = block.GetBlockValue("config_file", "");
 
