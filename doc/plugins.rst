@@ -355,7 +355,7 @@ This plugin can play links from YouTube directly. To play songs from other `supp
      - Space separated domains to to be played using this plugin by default. All other
        supported URLs can still be played by adding ytdl:// in front. Default is
        ``youtu.be music.youtube.com www.youtube.com``.
-   * - **command**
+   * - **executable**
      - Path or command name of the youtube-dl executable. Default is ``youtube-dl``.
    * - **format**
      - Audio format selection code. See youtube-dl documentation for more details.
