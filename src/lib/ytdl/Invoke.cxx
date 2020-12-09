@@ -74,7 +74,7 @@ YtdlProcess::Invoke(const YtdlInit &init, Yajl::Handle &handle, const char *url,
 		const char *config_flag = config_file.empty() ? nullptr : "--config-location";
 
 		const char *argv[] = {
-			"youtube-dl",
+			init.GetExecutable().c_str(),
 			"-Jf", init.GetFormat().c_str(),
 			"--flat-playlist", playlist_flag,
 			url,
@@ -82,7 +82,7 @@ YtdlProcess::Invoke(const YtdlInit &init, Yajl::Handle &handle, const char *url,
 			nullptr,
 		};
 
-		if (execvp(init.GetCommand().c_str(), const_cast<char * const *>(argv)) < 0) {
+		if (execvp(init.GetExecutable().c_str(), const_cast<char * const *>(argv)) < 0) {
 			_exit(EXIT_FAILURE);
 		}
 	}
