@@ -11,7 +11,7 @@
 
 namespace Ytdl {
 
-class TagHandler: public MetadataHandler {
+class TagHandler final : public MetadataHandler {
 	template<typename T>
 	struct Prioritise {
 		int priority = -1;

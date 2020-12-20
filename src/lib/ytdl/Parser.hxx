@@ -18,7 +18,7 @@ enum class PlaylistMode {
 	FLAT,
 };
 
-class Parser {
+class Parser final {
 	std::unique_ptr<ParserContext> context;
 
 public:
@@ -34,7 +34,7 @@ public:
 	virtual void OnError(YtdlMonitor* monitor, std::exception_ptr e) = 0;
 };
 
-class YtdlProcess {
+class YtdlProcess final {
 	Yajl::Handle &handle;
 	FileDescriptor fd;
 	int pid;
@@ -55,7 +55,7 @@ public:
 	void Close();
 };
 
-class YtdlMonitor : public SocketMonitor {
+class YtdlMonitor final : public SocketMonitor {
 	YtdlHandler &handler;
 	std::unique_ptr<YtdlProcess> process;
 

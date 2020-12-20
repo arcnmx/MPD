@@ -66,6 +66,7 @@ YtdlProcess::Invoke(const YtdlInit &init, Yajl::Handle &handle, const char *url,
 				playlist_flag = "--no-playlist";
 				break;
 			case PlaylistMode::FLAT:
+			default:
 				playlist_flag = "--yes-playlist";
 				break;
 		}

@@ -6,7 +6,7 @@
 
 namespace Ytdl {
 
-class InvokeContext {
+class InvokeContext final {
 	std::unique_ptr<TagHandler> metadata;
 	std::unique_ptr<Parser> parser;
 	std::unique_ptr<Yajl::Handle> handle;
