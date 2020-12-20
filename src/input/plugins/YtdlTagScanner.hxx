@@ -6,7 +6,7 @@
 #include "lib/ytdl/Invoke.hxx"
 #include <string>
 
-class YtdlTagScanner: public RemoteTagScanner, public Ytdl::YtdlHandler {
+class YtdlTagScanner final : public RemoteTagScanner, public Ytdl::YtdlHandler {
 	const Ytdl::YtdlInit &init;
 	std::string uri;
 	RemoteTagHandler &handler;
@@ -19,8 +19,8 @@ public:
 
 	void Start() override;
 
-	void OnComplete(Ytdl::YtdlMonitor* monitor);
-	void OnError(Ytdl::YtdlMonitor* monitor, std::exception_ptr e);
+	void OnComplete(Ytdl::YtdlMonitor* monitor) override;
+	void OnError(Ytdl::YtdlMonitor* monitor, std::exception_ptr e) override;
 };
 
 #endif
