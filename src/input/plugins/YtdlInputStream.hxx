@@ -5,10 +5,10 @@
 #include "lib/ytdl/Invoke.hxx"
 #include "lib/ytdl/Init.hxx"
 
-class Tag;
+struct Tag;
 class InputStreamHandler;
 
-class YtdlInputStream : public ProxyInputStream, public Ytdl::YtdlHandler {
+class YtdlInputStream final : public ProxyInputStream, public Ytdl::YtdlHandler {
 	static const int MAX_RETRY = 1;
 
 	std::unique_ptr<Ytdl::InvokeContext> context;
@@ -23,7 +23,7 @@ class YtdlInputStream : public ProxyInputStream, public Ytdl::YtdlHandler {
 public:
 	YtdlInputStream(const char *_uri, Mutex &_mutex, const Ytdl::YtdlInit &_init) noexcept;
 
-	~YtdlInputStream() noexcept;
+	~YtdlInputStream() noexcept override;
 	void Check() override;
 	const char *GetURI() const noexcept override;
 
@@ -32,8 +32,8 @@ public:
 	gcc_nonnull_all
 	size_t Read(std::unique_lock<Mutex> &lock, void *ptr, size_t size) override;
 
-	void OnComplete(Ytdl::YtdlMonitor* monitor);
-	void OnError(Ytdl::YtdlMonitor* monitor, std::exception_ptr e);
+	void OnComplete(Ytdl::YtdlMonitor* monitor) override;
+	void OnError(Ytdl::YtdlMonitor* monitor, std::exception_ptr e) override;
 
 	void OnInputStreamReady() noexcept override;
 };
