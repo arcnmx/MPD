@@ -7,13 +7,13 @@
 #include <forward_list>
 
 class EventLoop;
-class ConfigBlock;
+struct ConfigBlock;
 
 extern const class Domain ytdl_domain;
 
 namespace Ytdl {
 
-class YtdlInit {
+class YtdlInit final {
 	EventLoop* event_loop;
 	std::forward_list<std::string> domain_whitelist;
 	std::string executable;
